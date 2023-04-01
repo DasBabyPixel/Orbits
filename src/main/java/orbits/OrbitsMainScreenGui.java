@@ -1,0 +1,31 @@
+package orbits;
+
+import gamelauncher.engine.GameLauncher;
+import gamelauncher.engine.gui.ParentableAbstractGui;
+import gamelauncher.engine.gui.launcher.TextureGui;
+import gamelauncher.engine.util.GameException;
+
+public class OrbitsMainScreenGui extends ParentableAbstractGui {
+
+	public OrbitsMainScreenGui(GameLauncher launcher) throws GameException {
+		super(launcher);
+		TextureGui gui = launcher().guiManager().createGui(TextureGui.class);
+		gui.texture().uploadAsync(launcher().resourceLoader()
+						.resource(launcher().embedFileSystem().getPath("12orbits.png")).newResourceStream())
+				.thenRun(this::redraw).thenRun(() -> {
+					float aspectRatio =
+							gui.texture().width().floatValue() / gui.texture().height().floatValue();
+					gui.widthProperty().bind(widthProperty().min(heightProperty().multiply(aspectRatio)));
+					gui.heightProperty().bind(heightProperty().min(widthProperty().divide(aspectRatio)));
+					gui.xProperty()
+							.bind(xProperty().add(widthProperty().subtract(gui.widthProperty()).divide(2)));
+					gui.yProperty().bind(yProperty().add(
+							heightProperty().subtract(gui.heightProperty()).divide(2)));
+				});
+		gui.widthProperty().setNumber(width());
+		gui.heightProperty().setNumber(height());
+		gui.xProperty().setNumber(x());
+		gui.yProperty().setNumber(y());
+		GUIs.add(gui);
+	}
+}

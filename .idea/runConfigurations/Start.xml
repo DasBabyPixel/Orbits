@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Start" type="Application" factoryName="Application">
+    <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
+    <option name="MAIN_CLASS_NAME" value="gamelauncher.lwjgl.Start" />
+    <module name="orbits.main" />
+    <option name="PROGRAM_PARAMETERS" value="externalPlugin:../build/classes/java/main" />
+    <option name="VM_PARAMETERS" value="-DcalculateThreadStacks=true -Djansi.passthrough=true -ea" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+      <option name="Gradle.BeforeRunTask" enabled="false" tasks="generateRunDirectory classes" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
+    </method>
+  </configuration>
+</component>

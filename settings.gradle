@@ -1,0 +1,14 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode
+
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            name = 'DarkCube'
+            url = 'https://nexus.darkcube.eu/repository/dasbabypixel/'
+        }
+        mavenCentral()
+    }
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+}
+
+rootProject.name = 'orbits'
