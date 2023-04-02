@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Start" type="Application" factoryName="Application">
+  <configuration default="false" name="Start" type="Application" factoryName="Application" singleton="false">
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
     <option name="MAIN_CLASS_NAME" value="gamelauncher.lwjgl.Start" />
     <module name="Orbits.main" />
