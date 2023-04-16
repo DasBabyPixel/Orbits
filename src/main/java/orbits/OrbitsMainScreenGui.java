@@ -4,6 +4,10 @@ import gamelauncher.engine.GameLauncher;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.launcher.TextureGui;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.keybind.KeybindEvent;
+import gamelauncher.engine.util.keybind.KeyboardKeybindEvent.CharacterKeybindEvent;
+import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
+import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent.Type;
 
 public class OrbitsMainScreenGui extends ParentableAbstractGui {
 
@@ -34,5 +38,17 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
 					redraw();
 				});
 		GUIs.add(gui);
+	}
+
+	@Override
+	protected boolean doHandle(KeybindEvent event) throws GameException {
+		if (event instanceof MouseButtonKeybindEvent) {
+			MouseButtonKeybindEvent mbke = ((MouseButtonKeybindEvent) event);
+			if (mbke.type() == Type.PRESS)
+				launcher().keyboardVisible(!launcher().keyboardVisible());
+		} else if(event instanceof CharacterKeybindEvent) {
+			System.out.println(((CharacterKeybindEvent) event).character());
+		}
+		return super.doHandle(event);
 	}
 }

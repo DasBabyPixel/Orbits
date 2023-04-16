@@ -1,0 +1,18 @@
+<!--
+  ~ Copyright (C) 2023 Lorenz Wrobel. - All Rights Reserved
+  ~
+  ~ Unauthorized copying or redistribution of this file in source and binary forms via any medium
+  ~ is strictly prohibited.
+  -->
+
+<resources>
+    <!-- Base application theme. -->
+    <style name="Orbits" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

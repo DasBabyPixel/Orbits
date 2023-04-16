@@ -1,0 +1,38 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.dasbabypixel.orbits'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId 'de.dasbabypixel.orbits'
+        minSdk 26
+        targetSdk 33
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packagingOptions {
+        resources {
+            merges += 'META-INF/INDEX.LIST'
+            merges += 'META-INF/io.netty.versions.properties'
+        }
+    }
+}
+
+dependencies {
+    implementation parent
+    implementation 'de.dasbabypixel.gamelauncher:android:0.0.1-SNAPSHOT'
+    implementation 'com.google.android.material:material:1.8.0'
+}

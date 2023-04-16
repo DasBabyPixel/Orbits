@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'com.android.application' version '7.4.2' apply false
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
@@ -13,4 +14,9 @@ tasks.register("generateRunDirectory") {
 dependencies {
     api libs.gamelauncherApi
     runtimeOnly libs.gamelauncherLwjgl
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
