@@ -3,7 +3,7 @@ package orbits;
 import gamelauncher.engine.event.EventHandler;
 import gamelauncher.engine.event.events.gui.GuiOpenEvent;
 import gamelauncher.engine.game.Game;
-import gamelauncher.engine.gui.launcher.MainScreenGui;
+import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.render.Framebuffer;
 import gamelauncher.engine.util.GameException;
 

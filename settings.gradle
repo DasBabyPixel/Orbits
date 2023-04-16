@@ -1,11 +1,12 @@
-import org.gradle.api.initialization.resolve.RepositoriesMode
-
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
     }
+}
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.4.0'
 }
 dependencyResolutionManagement {
     repositories {
@@ -16,7 +17,7 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
     }
-    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+//    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
 }
 
 rootProject.name = 'Orbits'
