@@ -2,7 +2,7 @@ package orbits;
 
 import gamelauncher.engine.GameLauncher;
 import gamelauncher.engine.gui.ParentableAbstractGui;
-import gamelauncher.engine.gui.launcher.TextureGui;
+import gamelauncher.engine.gui.guis.TextureGui;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent.CharacterKeybindEvent;
