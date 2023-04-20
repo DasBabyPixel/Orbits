@@ -18,3 +18,8 @@ dependencies {
     api libs.gamelauncherApi
     runtimeOnly libs.gamelauncherLwjgl
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
