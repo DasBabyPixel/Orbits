@@ -24,4 +24,8 @@ public class Orbits extends Plugin {
 		launcher().gameRegistry().unregister(game.key());
 		launcher().eventManager().unregisterListener(game);
 	}
+
+	public OrbitsGame game() {
+		return game;
+	}
 }

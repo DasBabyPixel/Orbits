@@ -1,15 +1,19 @@
 package orbits.data;
 
-import gamelauncher.engine.network.packet.BufferObject;
-import gamelauncher.engine.network.packet.PacketBuffer;
+import gamelauncher.engine.data.DataBuffer;
+import gamelauncher.engine.data.DataSerializable;
 
-public class Position implements BufferObject {
+public class Position implements DataSerializable {
 
     private double x, y;
 
     public Position(double x, double y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Position() {
+        this(0, 0);
     }
 
     public double x() {
@@ -29,13 +33,13 @@ public class Position implements BufferObject {
     }
 
     @Override
-    public void write(PacketBuffer buffer) {
+    public void write(DataBuffer buffer) {
         buffer.writeDouble(x);
         buffer.writeDouble(y);
     }
 
     @Override
-    public void read(PacketBuffer buffer) {
+    public void read(DataBuffer buffer) {
         x = buffer.readDouble();
         y = buffer.readDouble();
     }

@@ -6,26 +6,41 @@ import gamelauncher.engine.game.Game;
 import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.render.Framebuffer;
 import gamelauncher.engine.util.GameException;
+import orbits.data.LevelStorage;
+import orbits.network.PacketHandlers;
 
 public class OrbitsGame extends Game {
-	public OrbitsGame(Orbits orbits) {
-		super(orbits, "orbits");
-	}
+    private final Orbits orbits;
+    private final PacketHandlers packetHandlers = new PacketHandlers(this);
+    private LevelStorage levelStorage;
 
-	@Override
-	protected void launch0(Framebuffer framebuffer) throws GameException {
-		launcher().guiManager().openGui(framebuffer, null);
-	}
+    public OrbitsGame(Orbits orbits) {
+        super(orbits, "orbits");
+        this.orbits = orbits;
+    }
 
-	@Override
-	protected void close0() {
+    @Override
+    protected void launch0(Framebuffer framebuffer) throws GameException {
+        levelStorage = new LevelStorage(orbits);
+        launcher().guiManager().openGui(framebuffer, null);
+    }
 
-	}
+    @Override
+    protected void close0() {
+    }
 
-	@EventHandler
-	private void handle(GuiOpenEvent event) throws GameException {
-		if (event.gui() instanceof MainScreenGui) {
-			event.gui(new OrbitsMainScreenGui(launcher()));
-		}
-	}
+    @EventHandler
+    private void handle(GuiOpenEvent event) throws GameException {
+        if (event.gui() instanceof MainScreenGui) {
+            event.gui(new OrbitsMainScreenGui(launcher()));
+        }
+    }
+
+    public LevelStorage levelStorage() {
+        return levelStorage;
+    }
+
+    public PacketHandlers packetHandlers() {
+        return packetHandlers;
+    }
 }

@@ -6,8 +6,6 @@
     <option name="PROGRAM_PARAMETERS" value="externalPlugin:../build/classes/java/main" />
     <option name="VM_PARAMETERS" value="-DcalculateThreadStacks=true -Djansi.passthrough=true -ea" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run" />
-    <method v="2">
-      <option name="Gradle.BeforeRunTask" enabled="false" tasks="generateRunDirectory classes" externalProjectPath="$PROJECT_DIR$" vmOptions="" scriptParameters="" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>

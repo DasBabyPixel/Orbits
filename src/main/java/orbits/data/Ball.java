@@ -1,9 +1,9 @@
 package orbits.data;
 
-import gamelauncher.engine.network.packet.BufferObject;
-import gamelauncher.engine.network.packet.PacketBuffer;
+import gamelauncher.engine.data.DataBuffer;
+import gamelauncher.engine.data.DataSerializable;
 
-public class Ball implements BufferObject {
+public class Ball implements DataSerializable {
     private final Position position = new Position(0, 0);
     private double radius;
 
@@ -20,13 +20,13 @@ public class Ball implements BufferObject {
     }
 
     @Override
-    public void write(PacketBuffer buffer) {
+    public void write(DataBuffer buffer) {
         buffer.write(position);
         buffer.writeDouble(radius);
     }
 
     @Override
-    public void read(PacketBuffer buffer) {
+    public void read(DataBuffer buffer) {
         buffer.read(position);
         radius = buffer.readDouble();
     }

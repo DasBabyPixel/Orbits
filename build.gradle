@@ -7,12 +7,7 @@ java.toolchain {
     languageVersion.set(JavaLanguageVersion.of(11))
     vendor = JvmVendorSpec.ADOPTIUM
 }
-
-tasks.register("generateRunDirectory") {
-    doLast {
-        mkdir "run"
-    }
-}
+mkdir "run"
 
 dependencies {
     api libs.gamelauncherApi

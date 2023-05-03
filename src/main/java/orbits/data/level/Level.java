@@ -1,34 +1,87 @@
 package orbits.data.level;
 
-import gamelauncher.engine.network.packet.BufferObject;
-import gamelauncher.engine.network.packet.PacketBuffer;
+import gamelauncher.engine.data.DataBuffer;
+import gamelauncher.engine.data.DataSerializable;
 import orbits.data.Orbit;
 import orbits.data.Position;
 import orbits.data.Wall;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
-public class Level implements BufferObject {
+public class Level implements DataSerializable {
 
-    private int dataVersion = 0;
+    private int dataVersion = 1;
+    private UUID uuid;
     private final List<Orbit> orbits = new ArrayList<>();
     private final List<StartPosition> startPositions = new ArrayList<>();
     private final List<Position> wallPositions = new ArrayList<>();
+    private final List<Wall> walls = new ArrayList<>();
+    private long checksum = -1L; // Not serialized, set and read by code
 
-    @Override
-    public void write(PacketBuffer buffer) {
-        buffer.writeInt(dataVersion);
-        buffer.writeList(orbits);
-        buffer.writeList(startPositions);
+    public int dataVersion() {
+        return dataVersion;
+    }
+
+    public void dataVersion(int dataVersion) {
+        this.dataVersion = dataVersion;
+    }
+
+    public UUID uuid() {
+        return uuid;
+    }
+
+    public void uuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public List<Orbit> orbits() {
+        return orbits;
+    }
+
+    public List<StartPosition> startPositions() {
+        return startPositions;
+    }
+
+    public List<Position> wallPositions() {
+        return wallPositions;
+    }
+
+    public List<Wall> walls() {
+        return walls;
     }
 
     @Override
-    public void read(PacketBuffer buffer) {
+    public void write(DataBuffer buffer) {
+        buffer.writeInt(dataVersion);
+        buffer.writeLong(uuid.getMostSignificantBits());
+        buffer.writeLong(uuid.getLeastSignificantBits());
+        buffer.writeList(orbits);
+        buffer.writeList(startPositions);
+        buffer.writeList(wallPositions);
+        buffer.writeList(walls);
+    }
+
+    @Override
+    public void read(DataBuffer buffer) {
         dataVersion = buffer.readInt();
-        buffer.readList(orbits, Orbit::new);
-        buffer.readList(startPositions, StartPosition::new);
+        if (dataVersion == 1) {
+            uuid = new UUID(buffer.readLong(), buffer.readLong());
+            buffer.readList(orbits, Orbit::new);
+            buffer.readList(startPositions, StartPosition::new);
+            buffer.readList(wallPositions, Position::new);
+            buffer.readList(walls, () -> new Wall(this));
+        } else {
+            throw new UnsupportedOperationException("Invalid DataVersion");
+        }
+    }
+
+    public long checksum() {
+        return checksum;
+    }
+
+    public void checksum(long checksum) {
+        this.checksum = checksum;
     }
 }
