@@ -18,6 +18,10 @@ public class LevelChecksumPacket extends Packet {
         this.checksum = checksum;
     }
 
+    public LevelChecksumPacket() {
+        this(null, 0);
+    }
+
     @Override
     protected void write0(DataBuffer buffer) {
         buffer.writeLong(levelId.getMostSignificantBits());

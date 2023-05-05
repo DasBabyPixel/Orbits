@@ -16,6 +16,10 @@ public class RequestLevelPacket extends Packet {
         this.levelId = levelId;
     }
 
+    public RequestLevelPacket() {
+        this(null);
+    }
+
     @Override
     protected void write0(DataBuffer buffer) {
         buffer.writeLong(levelId.getMostSignificantBits());
@@ -24,6 +28,6 @@ public class RequestLevelPacket extends Packet {
 
     @Override
     protected void read0(DataBuffer buffer) {
-        levelId = new UUID(buffer.readLong(),buffer.readLong());
+        levelId = new UUID(buffer.readLong(), buffer.readLong());
     }
 }
