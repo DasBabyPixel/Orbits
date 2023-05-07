@@ -2,7 +2,7 @@ metadata.format.version = "1.1"
 
 [versions]
 
-gamelauncher = "0.0.1-SNAPSHOT"
+gamelauncher = "0.0.2-SNAPSHOT"
 
 [libraries]
 gamelauncherApi = { group = "de.dasbabypixel.gamelauncher", name = "api", version.ref = "gamelauncher" }

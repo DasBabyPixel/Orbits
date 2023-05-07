@@ -7,8 +7,8 @@ import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.network.packet.PacketNotRegisteredException;
 import gamelauncher.engine.render.Framebuffer;
 import gamelauncher.engine.util.GameException;
-import orbits.data.AvailableData;
 import orbits.data.LevelStorage;
+import orbits.gui.OrbitsMainScreenGui;
 import orbits.lobby.Lobby;
 import orbits.network.PacketHandlers;
 
@@ -38,7 +38,7 @@ public class OrbitsGame extends Game {
     @EventHandler
     private void handle(GuiOpenEvent event) throws GameException {
         if (event.gui() instanceof MainScreenGui) {
-            event.gui(new OrbitsMainScreenGui(launcher()));
+            event.gui(new OrbitsMainScreenGui(this));
         }
     }
 
