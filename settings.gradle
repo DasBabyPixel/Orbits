@@ -17,9 +17,10 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
     }
-//    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
 }
 
 rootProject.name = 'Orbits'
 
 include 'android'
+include 'lwjgl'

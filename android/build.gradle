@@ -33,6 +33,6 @@ android {
 
 dependencies {
     implementation parent
-    implementation 'de.dasbabypixel.gamelauncher:android:0.0.1-SNAPSHOT'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation libs.gamelauncherAndroid
+    implementation 'com.google.android.material:material:1.9.0'
 }

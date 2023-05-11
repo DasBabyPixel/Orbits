@@ -12,20 +12,17 @@ import java.util.UUID;
 
 public class Level implements DataSerializable {
 
-    private int dataVersion = 1;
-    private UUID uuid;
     private final List<Orbit> orbits = new ArrayList<>();
     private final List<StartPosition> startPositions = new ArrayList<>();
     private final List<Position> wallPositions = new ArrayList<>();
     private final List<Wall> walls = new ArrayList<>();
+    private final int dataVersion = 2;
+    private UUID uuid;
+    private float aspectRatioWpH = 16F / 9F;
     private long checksum = -1L; // Not serialized, set and read by code
 
     public int dataVersion() {
         return dataVersion;
-    }
-
-    public void dataVersion(int dataVersion) {
-        this.dataVersion = dataVersion;
     }
 
     public UUID uuid() {
@@ -48,6 +45,17 @@ public class Level implements DataSerializable {
         return wallPositions;
     }
 
+    /**
+     * @return width/height ratio
+     */
+    public float aspectRatioWpH() {
+        return aspectRatioWpH;
+    }
+
+    public void aspectRatioWpH(float aspectRatioWpH) {
+        this.aspectRatioWpH = aspectRatioWpH;
+    }
+
     public List<Wall> walls() {
         return walls;
     }
@@ -55,6 +63,7 @@ public class Level implements DataSerializable {
     @Override
     public void write(DataBuffer buffer) {
         buffer.writeInt(dataVersion);
+        buffer.writeFloat(aspectRatioWpH);
         buffer.writeLong(uuid.getMostSignificantBits());
         buffer.writeLong(uuid.getLeastSignificantBits());
         buffer.writeList(orbits);
@@ -65,8 +74,15 @@ public class Level implements DataSerializable {
 
     @Override
     public void read(DataBuffer buffer) {
-        dataVersion = buffer.readInt();
+        int dataVersion = buffer.readInt();
         if (dataVersion == 1) {
+            uuid = new UUID(buffer.readLong(), buffer.readLong());
+            buffer.readList(orbits, Orbit::new);
+            buffer.readList(startPositions, StartPosition::new);
+            buffer.readList(wallPositions, Position::new);
+            buffer.readList(walls, () -> new Wall(this));
+        } else if (dataVersion == 2) {
+            aspectRatioWpH = buffer.readFloat();
             uuid = new UUID(buffer.readLong(), buffer.readLong());
             buffer.readList(orbits, Orbit::new);
             buffer.readList(startPositions, StartPosition::new);

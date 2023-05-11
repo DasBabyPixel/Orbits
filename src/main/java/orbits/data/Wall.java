@@ -3,15 +3,24 @@ package orbits.data;
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.data.DataSerializable;
 import orbits.data.level.Level;
+import orbits.physics.Collidable;
+import org.dyn4j.dynamics.Body;
+import org.dyn4j.geometry.Segment;
 
-public class Wall implements DataSerializable {
+public class Wall implements DataSerializable, Collidable {
 
     private final Level level;
+    private final Body body = new Body();
     private int pos1Index;
     private int pos2Index;
 
     public Wall(Level level) {
         this.level = level;
+    }
+
+    public void recalcBody() {
+        body.removeAllFixtures();
+        body.addFixture(new Segment(level.wallPositions().get(pos1Index).physicsVector(), level.wallPositions().get(pos2Index).physicsVector()));
     }
 
     public Level level() {
@@ -35,6 +44,11 @@ public class Wall implements DataSerializable {
     }
 
     @Override
+    public Body body() {
+        return body;
+    }
+
+    @Override
     public void write(DataBuffer buffer) {
         buffer.writeInt(pos1Index);
         buffer.writeInt(pos2Index);
@@ -44,5 +58,6 @@ public class Wall implements DataSerializable {
     public void read(DataBuffer buffer) {
         pos1Index = buffer.readInt();
         pos2Index = buffer.readInt();
+        recalcBody();
     }
 }

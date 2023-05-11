@@ -4,11 +4,13 @@ import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.data.DataMemory;
 import gamelauncher.engine.data.Files;
 import gamelauncher.engine.util.GameException;
-import orbits.Orbits;
+import orbits.OrbitsGame;
 import orbits.data.level.Level;
 
-import java.nio.file.LinkOption;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -20,9 +22,23 @@ public class LevelStorage {
     private final Checksum checksum = new CRC32();
     private final Path folder;
 
-    public LevelStorage(Orbits orbits) throws GameException {
-        this.folder = orbits.game().directory().resolve("levels");
+    public LevelStorage(OrbitsGame orbits) throws GameException {
+        this.folder = orbits.directory().resolve("levels");
         Files.createDirectories(folder);
+    }
+
+    public UUID[] levels() throws GameException {
+        DirectoryStream<Path> stream = Files.newDirectoryStream(folder);
+        List<UUID> uuids = new ArrayList<>();
+        try {
+            for (Path path : stream) {
+                uuids.add(UUID.fromString(path.getFileName().toString()));
+            }
+            stream.close();
+        } catch (IOException e) {
+            throw new GameException(e);
+        }
+        return uuids.toArray(new UUID[0]);
     }
 
     public void saveLevel(Level level) throws GameException {

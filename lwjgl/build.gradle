@@ -1,18 +1,15 @@
 plugins {
-    id 'java-library'
-    id 'com.android.application' version '7.4.2' apply false
+    id 'java'
 }
 
 java.toolchain {
     languageVersion.set(JavaLanguageVersion.of(11))
     vendor = JvmVendorSpec.ADOPTIUM
 }
-mkdir "run"
 
 dependencies {
-    api libs.gamelauncherApi
-    api libs.gamelauncherGles
-    api libs.dyn4j
+    runtimeOnly parent
+    runtimeOnly libs.gamelauncherLwjgl
 }
 
 java {
