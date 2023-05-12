@@ -148,6 +148,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         levelGui.registerKeybindHandler(KeybindEvent.class, event -> {
             if (selectedHandler != null) selectedHandler.handle(event);
         });
+
         ColorGui editorBackground = launcher().guiManager().createGui(ColorGui.class);
         editorBackground.xProperty().bind(editorX);
         editorBackground.yProperty().bind(editorY);

@@ -21,13 +21,6 @@ public class LevelGui extends ParentableAbstractGui {
     private final NumberValue realY;
     private final NumberValue realWidth;
     private final NumberValue realHeight;
-    private final NumberInvalidationListener recalcListener = property -> {
-        try {
-            updateAll();
-        } catch (GameException e) {
-            throw new RuntimeException(e);
-        }
-    };
 
     public LevelGui(OrbitsGame orbits, Level level) throws GameException {
         super(orbits.launcher());
@@ -38,6 +31,13 @@ public class LevelGui extends ParentableAbstractGui {
         realHeight = heightProperty().min(widthProperty().divide(aspectRatio));
         realX = xProperty().add(widthProperty().subtract(realWidth).divide(2));
         realY = yProperty().add(heightProperty().subtract(realHeight).divide(2));
+        NumberInvalidationListener recalcListener = property -> {
+            try {
+                updateAll();
+            } catch (GameException e) {
+                throw new RuntimeException(e);
+            }
+        };
         realX.addListener(recalcListener);
         realY.addListener(recalcListener);
         realWidth.addListener(recalcListener);
