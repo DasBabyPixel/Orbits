@@ -43,9 +43,6 @@ public class LevelGui extends ParentableAbstractGui {
         realWidth.addListener(recalcListener);
         realHeight.addListener(recalcListener);
 
-        for (Wall wall : level.walls()) {
-            update(wall);
-        }
         ColorGui c = launcher().guiManager().createGui(ColorGui.class);
         c.xProperty().bind(realX);
         c.yProperty().bind(realY);
@@ -53,6 +50,10 @@ public class LevelGui extends ParentableAbstractGui {
         c.heightProperty().bind(realHeight);
         c.color().set(1, 0, 0, 0.3F);
         GUIs.add(c);
+
+        for (Wall wall : level.walls()) {
+            update(wall);
+        }
     }
 
     public NumberValue realX() {

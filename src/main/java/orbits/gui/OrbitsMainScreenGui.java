@@ -20,7 +20,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         mapEditor.widthProperty().bind(width);
         mapEditor.heightProperty().bind(height);
         LevelSelectGui levelSelectGui = new LevelSelectGui(orbits);
-        levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(framebuffer, new MapEditorGui(orbits, level)));
+        levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(levelSelectGui.framebuffer(), new MapEditorGui(orbits, level)));
         mapEditor.onButtonPressed(event -> launcher().guiManager().openGui(framebuffer, levelSelectGui));
         GUIs.add(mapEditor);
         ButtonGui settings = launcher().guiManager().createGui(ButtonGui.class);

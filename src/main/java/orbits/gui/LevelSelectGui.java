@@ -7,6 +7,7 @@ import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.ScrollGui;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.function.GameConsumer;
+import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
 import orbits.data.level.Level;
@@ -36,6 +37,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         newLevel.widthProperty().bind(exit.widthProperty().multiply(2));
         newLevel.heightProperty().bind(exit.heightProperty());
         ((ButtonGui.Simple.TextForeground) newLevel.foreground().value()).textGui().text().value(Component.text("New Level"));
+//        newLevel.registerKeybindHandler(KeybindEvent.class, System.out::println);
         newLevel.onButtonPressed(event -> {
             Level level = new Level();
             level.uuid(UUID.randomUUID());
@@ -49,7 +51,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         scrollGui.xProperty().bind(xProperty().add(inset));
         scrollGui.yProperty().bind(yProperty().add(inset));
         scrollGui.widthProperty().bind(widthProperty().subtract(inset.multiply(2)));
-        scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)));
+        scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)).subtract(newLevel.heightProperty()));
         scrollGui.gui().value(new LevelsGui(orbits));
         GUIs.add(scrollGui);
     }
@@ -72,12 +74,15 @@ public class LevelSelectGui extends ParentableAbstractGui {
             super(orbits.launcher());
 
             NumberValue x = xProperty();
-            NumberValue y = yProperty().subtract(240);
+            boolean first = true;
+            NumberValue y = yProperty();
             for (UUID levelId : levels) {
                 Level level = orbits.levelStorage().findLevel(levelId, -1);
                 LevelGui levelGui = new LevelGui(orbits, level);
                 ButtonGui button = launcher().guiManager().createGui(ButtonGui.class);
-                y = y.add(240);
+                if (first) first = false;
+                else y = y.add(240);
+
                 button.xProperty().bind(x);
                 button.yProperty().bind(y);
                 button.width((float) (200 * 16) / 9);

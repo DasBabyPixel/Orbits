@@ -185,7 +185,7 @@ public class MapEditorGui extends ParentableAbstractGui {
     }
 
     private ButtonGui.Simple createButton() throws GameException {
-        ButtonGui.Simple b = game.launcher().guiManager().createGui(ButtonGui.Simple.class);
+        ButtonGui.Simple b = (ButtonGui.Simple) game.launcher().guiManager().createGui(ButtonGui.class);
         ((ButtonGui.Simple.TextForeground) b.foreground().value()).textGui().text().value(Component.empty());
         return b;
     }

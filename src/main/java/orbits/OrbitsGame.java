@@ -4,11 +4,14 @@ import gamelauncher.engine.event.EventHandler;
 import gamelauncher.engine.event.events.LauncherInitializedEvent;
 import gamelauncher.engine.event.events.gui.GuiOpenEvent;
 import gamelauncher.engine.game.Game;
+import gamelauncher.engine.gui.GuiDistribution;
+import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.network.packet.PacketNotRegisteredException;
 import gamelauncher.engine.render.Framebuffer;
 import gamelauncher.engine.util.GameException;
 import orbits.data.LevelStorage;
+import orbits.gui.CustomGui;
 import orbits.gui.OrbitsMainScreenGui;
 import orbits.lobby.Lobby;
 import orbits.network.PacketHandlers;
@@ -23,6 +26,7 @@ public class OrbitsGame extends Game {
         super(orbits, "orbits");
         this.orbits = orbits;
         levelStorage = new LevelStorage(this);
+        launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, ButtonGui.class, CustomGui.class);
     }
 
     @Override
