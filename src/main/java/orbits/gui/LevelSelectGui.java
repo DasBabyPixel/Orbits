@@ -29,7 +29,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         exit.widthProperty().bind(inset.multiply(10));
         exit.heightProperty().bind(inset.multiply(4));
         ((ButtonGui.Simple.TextForeground) exit.foreground().value()).textGui().text().value(Component.text("Back"));
-        GUIs.add(exit);
+        addGUI(exit);
 
         newLevel = launcher().guiManager().createGui(ButtonGui.class);
         newLevel.xProperty().bind(xProperty().add(widthProperty()).subtract(inset.add(newLevel.widthProperty())));
@@ -42,9 +42,9 @@ public class LevelSelectGui extends ParentableAbstractGui {
             Level level = new Level();
             level.uuid(UUID.randomUUID());
             MapEditorGui mapEditorGui = new MapEditorGui(orbits, level);
-            launcher().guiManager().openGui(framebuffer, mapEditorGui);
+            launcher().guiManager().openGui(mapEditorGui);
         });
-        GUIs.add(newLevel);
+        addGUI(newLevel);
 
         levels = orbits.levelStorage().levels();
         ScrollGui scrollGui = launcher().guiManager().createGui(ScrollGui.class);
@@ -53,7 +53,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         scrollGui.widthProperty().bind(widthProperty().subtract(inset.multiply(2)));
         scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)).subtract(newLevel.heightProperty()));
         scrollGui.gui().value(new LevelsGui(orbits));
-        GUIs.add(scrollGui);
+        addGUI(scrollGui);
     }
 
     public ButtonGui exit() {
@@ -89,7 +89,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
                 button.height(200);
                 button.onButtonPressed(e -> levelSelector.value().accept(level));
                 button.foreground().value(levelGui);
-                GUIs.add(button);
+                addGUI(button);
             }
             widthProperty().number(300);
             heightProperty().number(levels.length * 240);

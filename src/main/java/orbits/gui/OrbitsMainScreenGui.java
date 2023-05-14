@@ -19,10 +19,12 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         mapEditor.yProperty().bind(yProperty().add(heightProperty().divide(2)).subtract(mapEditor.heightProperty().divide(2)));
         mapEditor.widthProperty().bind(width);
         mapEditor.heightProperty().bind(height);
-        LevelSelectGui levelSelectGui = new LevelSelectGui(orbits);
-        levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(levelSelectGui.framebuffer(), new MapEditorGui(orbits, level)));
-        mapEditor.onButtonPressed(event -> launcher().guiManager().openGui(framebuffer, levelSelectGui));
-        GUIs.add(mapEditor);
+        mapEditor.onButtonPressed(event -> {
+            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits);
+            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new MapEditorGui(orbits, level)));
+            launcher().guiManager().openGui(levelSelectGui);
+        });
+        addGUI(mapEditor);
         ButtonGui settings = launcher().guiManager().createGui(ButtonGui.class);
 
         ((ButtonGui.Simple.TextForeground) settings.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("settings"))));
@@ -30,14 +32,15 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         settings.yProperty().bind(mapEditor.yProperty().subtract(settings.heightProperty().multiply(1.5)));
         settings.widthProperty().bind(width);
         settings.heightProperty().bind(height);
-        GUIs.add(settings);
+        addGUI(settings);
         ButtonGui play = launcher().guiManager().createGui(ButtonGui.class);
         ((ButtonGui.Simple.TextForeground) play.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("play"))));
         play.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(play.widthProperty()));
         play.yProperty().bind(mapEditor.yProperty().add(play.heightProperty().multiply(1.5)));
         play.widthProperty().bind(width);
         play.heightProperty().bind(height);
-        GUIs.add(play);
+        addGUI(play);
+
 //        TextureGui gui = launcher().guiManager().createGui(TextureGui.class);
 //        gui.widthProperty().bind(widthProperty());
 //        gui.heightProperty().bind(heightProperty());

@@ -1,7 +1,6 @@
 package orbits.gui;
 
-import de.dasbabypixel.api.property.NumberInvalidationListener;
-import de.dasbabypixel.api.property.NumberValue;
+import de.dasbabypixel.api.property.*;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ColorGui;
 import gamelauncher.engine.gui.guis.LineGui;
@@ -31,13 +30,17 @@ public class LevelGui extends ParentableAbstractGui {
         realHeight = heightProperty().min(widthProperty().divide(aspectRatio));
         realX = xProperty().add(widthProperty().subtract(realWidth).divide(2));
         realY = yProperty().add(heightProperty().subtract(realHeight).divide(2));
-        NumberInvalidationListener recalcListener = property -> {
+        NumberChangeListener recalcListener = (value, oldNumber, newNumber) -> {
             try {
                 updateAll();
             } catch (GameException e) {
                 throw new RuntimeException(e);
             }
         };
+        realX.addListener((InvalidationListener) Property::value);
+        realY.addListener((InvalidationListener) Property::value);
+        realWidth.addListener((InvalidationListener) Property::value);
+        realHeight.addListener((InvalidationListener) Property::value);
         realX.addListener(recalcListener);
         realY.addListener(recalcListener);
         realWidth.addListener(recalcListener);
@@ -49,7 +52,7 @@ public class LevelGui extends ParentableAbstractGui {
         c.widthProperty().bind(realWidth);
         c.heightProperty().bind(realHeight);
         c.color().set(1, 0, 0, 0.3F);
-        GUIs.add(c);
+        addGUI(c);
 
         for (Wall wall : level.walls()) {
             update(wall);
@@ -73,13 +76,9 @@ public class LevelGui extends ParentableAbstractGui {
     }
 
     public void remove(Wall wall) throws GameException {
-        WallGui wg = walls.get(wall);
+        WallGui wg = walls.remove(wall);
         if (wg != null) {
-            GUIs.remove(wg);
-            wg.unfocus();
-            wg.onClose();
-            if (framebuffer != null) framebuffer.renderThread().submit(() -> wg.cleanup(framebuffer));
-            redraw();
+            removeGUI(wg);
         }
     }
 
@@ -98,10 +97,7 @@ public class LevelGui extends ParentableAbstractGui {
             wg.heightProperty().bind(realHeight);
             wg.recalc();
             walls.put(wall, wg);
-            GUIs.add(wg);
-            wg.onOpen();
-            if (framebuffer != null) framebuffer.renderThread().submit(() -> wg.init(framebuffer));
-            redraw();
+            addGUI(wg);
         } else walls.get(wall).recalc();
     }
 
@@ -118,7 +114,7 @@ public class LevelGui extends ParentableAbstractGui {
             this.wall = wall;
             lineGui = launcher().guiManager().createGui(LineGui.class);
             lineGui.lineWidth().number(2);
-            GUIs.add(lineGui);
+            addGUI(lineGui);
         }
 
         public void recalc() {
@@ -126,7 +122,6 @@ public class LevelGui extends ParentableAbstractGui {
             lineGui.fromY().number(level.wallPositions().get(wall.pos1Index()).y() * realHeight.floatValue() + realY.floatValue());
             lineGui.toX().number(level.wallPositions().get(wall.pos2Index()).x() * realWidth.floatValue() + realX.floatValue());
             lineGui.toY().number(level.wallPositions().get(wall.pos2Index()).y() * realHeight.floatValue() + realY.floatValue());
-            redraw();
         }
     }
 }

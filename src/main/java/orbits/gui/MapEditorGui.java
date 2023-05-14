@@ -53,7 +53,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         saveAndExit.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) saveAndExit.foreground().value()).textGui().text().value(Component.text("Save"));
         saveAndExit.onButtonPressed(event -> orbits.levelStorage().saveLevel(level));
-        GUIs.add(saveAndExit);
+        addGUI(saveAndExit);
 
         ButtonGui exit = createButton();
         exit.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -61,8 +61,8 @@ public class MapEditorGui extends ParentableAbstractGui {
         exit.widthProperty().bind(columnWidth);
         exit.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) exit.foreground().value()).textGui().text().value(Component.text("Exit"));
-        exit.onButtonPressed(event -> launcher().guiManager().openGuiByClass(framebuffer, MainScreenGui.class));
-        GUIs.add(exit);
+        exit.onButtonPressed(event -> launcher().guiManager().openGuiByClass(MainScreenGui.class));
+        addGUI(exit);
 
         ButtonGui newOrbit = createButton();
         newOrbit.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
@@ -71,7 +71,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         newOrbit.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) newOrbit.foreground().value()).textGui().text().value(Component.text("Orbit"));
         newOrbit.onButtonPressed(event -> select(newOrbit, null));
-        GUIs.add(newOrbit);
+        addGUI(newOrbit);
 
         ButtonGui newWall = createButton();
         newWall.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -80,7 +80,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         newWall.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) newWall.foreground().value()).textGui().text().value(Component.text("Wall"));
         newWall.onButtonPressed(event -> select(newWall, newWallHandler));
-        GUIs.add(newWall);
+        addGUI(newWall);
 
         ButtonGui newSpawnpoint = createButton();
         newSpawnpoint.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
@@ -89,7 +89,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         newSpawnpoint.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) newSpawnpoint.foreground().value()).textGui().text().value(Component.text("Spawn"));
         newSpawnpoint.onButtonPressed(event -> select(newSpawnpoint, null));
-        GUIs.add(newSpawnpoint);
+        addGUI(newSpawnpoint);
 
         ButtonGui grid = createButton();
         grid.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -97,7 +97,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         grid.widthProperty().bind(columnWidth);
         grid.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) grid.foreground().value()).textGui().text().value(Component.text("Grid"));
-        GUIs.add(grid);
+        addGUI(grid);
 
         ButtonGui radius = createButton();
         radius.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
@@ -105,7 +105,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         radius.widthProperty().bind(columnWidth.multiply(2).add(spacing));
         radius.heightProperty().bind(rowHeight.multiply(2).add(spacing));
         ((ButtonGui.Simple.TextForeground) radius.foreground().value()).textGui().text().value(Component.text("Radius"));
-        GUIs.add(radius);
+        addGUI(radius);
 
         ButtonGui undo = createButton();
         undo.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
@@ -113,7 +113,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         undo.widthProperty().bind(columnWidth);
         undo.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) undo.foreground().value()).textGui().text().value(Component.text("Undo"));
-        GUIs.add(undo);
+        addGUI(undo);
 
         ButtonGui delete = createButton();
         delete.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -121,7 +121,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         delete.widthProperty().bind(columnWidth);
         delete.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) delete.foreground().value()).textGui().text().value(Component.text("Del"));
-        GUIs.add(delete);
+        addGUI(delete);
 
         ButtonGui redo = createButton();
         redo.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
@@ -129,7 +129,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         redo.widthProperty().bind(columnWidth);
         redo.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) redo.foreground().value()).textGui().text().value(Component.text("Redo"));
-        GUIs.add(redo);
+        addGUI(redo);
 
         ButtonGui move = createButton();
         move.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -138,7 +138,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         move.heightProperty().bind(rowHeight);
         move.onButtonPressed(event -> select(move, null));
         ((ButtonGui.Simple.TextForeground) move.foreground().value()).textGui().text().value(Component.text("Move"));
-        GUIs.add(move);
+        addGUI(move);
 
         levelGui = new LevelGui(orbits, level);
         levelGui.xProperty().bind(editorX);
@@ -156,8 +156,8 @@ public class MapEditorGui extends ParentableAbstractGui {
         editorBackground.heightProperty().bind(editorHeight);
         editorBackground.color().set(0, 0, 0, 0.7F);
 
-        GUIs.add(editorBackground);
-        GUIs.add(levelGui);
+        addGUI(editorBackground);
+        addGUI(levelGui);
 
     }
 
