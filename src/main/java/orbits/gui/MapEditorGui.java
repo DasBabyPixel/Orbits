@@ -10,6 +10,7 @@ import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
+import orbits.data.Orbit;
 import orbits.data.Position;
 import orbits.data.Wall;
 import orbits.data.level.Level;
@@ -24,6 +25,7 @@ public class MapEditorGui extends ParentableAbstractGui {
     private final LevelGui levelGui;
     private final TransactionTracker transactionTracker;
     private final NewWallHandler newWallHandler = new NewWallHandler();
+    private final NewOrbitHandler newOrbitHandler = new NewOrbitHandler();
     private ButtonGui selected = null;
     private SelectedHandler selectedHandler = null;
 
@@ -70,7 +72,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         newOrbit.widthProperty().bind(columnWidth);
         newOrbit.heightProperty().bind(rowHeight);
         ((ButtonGui.Simple.TextForeground) newOrbit.foreground().value()).textGui().text().value(Component.text("Orbit"));
-        newOrbit.onButtonPressed(event -> select(newOrbit, null));
+        newOrbit.onButtonPressed(event -> select(newOrbit, newOrbitHandler));
         addGUI(newOrbit);
 
         ButtonGui newWall = createButton();
@@ -198,6 +200,26 @@ public class MapEditorGui extends ParentableAbstractGui {
         }
 
         default void handleDeselect() throws GameException {
+        }
+    }
+
+    private class NewOrbitHandler implements SelectedHandler {
+
+        @Override
+        public void handle(KeybindEvent event) throws GameException {
+            if (event instanceof MouseButtonKeybindEvent) {
+                MouseButtonKeybindEvent mb = (MouseButtonKeybindEvent) event;
+                if (mb.type() != MouseButtonKeybindEvent.Type.PRESS) return;
+                Position pos = new Position((mb.mouseX() - levelGui.realX().floatValue()) / levelGui.realWidth().floatValue(), (mb.mouseY() - levelGui.realY().floatValue()) / levelGui.realHeight().floatValue());
+                if (pos.x() < 0 || pos.y() < 0 || pos.x() > 1 || pos.y() > 1) return;
+                Orbit orbit = new Orbit();
+                orbit.radius(0.05);
+                orbit.position().x(pos.x());
+                orbit.position().y(pos.y());
+                orbit.recalcBody();
+                level.orbits().add(orbit);
+                levelGui.update(orbit);
+            }
         }
     }
 

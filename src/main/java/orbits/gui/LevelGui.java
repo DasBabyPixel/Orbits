@@ -1,11 +1,16 @@
 package orbits.gui;
 
 import de.dasbabypixel.api.property.*;
+import gamelauncher.engine.GameLauncher;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ColorGui;
 import gamelauncher.engine.gui.guis.LineGui;
+import gamelauncher.engine.gui.guis.TextureGui;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.Key;
+import it.unimi.dsi.fastutil.objects.Object2IntRBTreeMap;
 import orbits.OrbitsGame;
+import orbits.data.Orbit;
 import orbits.data.Wall;
 import orbits.data.level.Level;
 
@@ -14,8 +19,9 @@ import java.util.Map;
 
 public class LevelGui extends ParentableAbstractGui {
     private final Level level;
-    private final OrbitsGame orbits;
+    private final OrbitsGame orbitsGame;
     private final Map<Wall, WallGui> walls = new HashMap<>();
+    private final Map<Orbit, OrbitGui> orbits = new HashMap<>();
     private final NumberValue realX;
     private final NumberValue realY;
     private final NumberValue realWidth;
@@ -23,7 +29,7 @@ public class LevelGui extends ParentableAbstractGui {
 
     public LevelGui(OrbitsGame orbits, Level level) throws GameException {
         super(orbits.launcher());
-        this.orbits = orbits;
+        this.orbitsGame = orbits;
         this.level = level;
         float aspectRatio = level.aspectRatioWpH();
         realWidth = widthProperty().min(heightProperty().multiply(aspectRatio));
@@ -57,6 +63,9 @@ public class LevelGui extends ParentableAbstractGui {
         for (Wall wall : level.walls()) {
             update(wall);
         }
+        for (Orbit orbit : level.orbits()) {
+            update(orbit);
+        }
     }
 
     public NumberValue realX() {
@@ -82,15 +91,36 @@ public class LevelGui extends ParentableAbstractGui {
         }
     }
 
+    public void remove(Orbit orbit) {
+        OrbitGui og = orbits.remove(orbit);
+        if (og != null) removeGUI(og);
+    }
+
     public void updateAll() throws GameException {
         for (Wall wall : walls.keySet()) {
             update(wall);
         }
+        for (Orbit orbit : orbits.keySet()) {
+            update(orbit);
+        }
+    }
+
+    public void update(Orbit orbit) throws GameException {
+        if (!orbits.containsKey(orbit)) {
+            OrbitGui og = new OrbitGui(orbitsGame, orbit);
+            og.xProperty().bind(realX);
+            og.yProperty().bind(realY);
+            og.widthProperty().bind(realWidth);
+            og.heightProperty().bind(realHeight);
+            og.recalc();
+            orbits.put(orbit,og);
+            addGUI(og);
+        } else orbits.get(orbit).recalc();
     }
 
     public void update(Wall wall) throws GameException {
         if (!walls.containsKey(wall)) {
-            WallGui wg = new WallGui(orbits, wall);
+            WallGui wg = new WallGui(orbitsGame, wall);
             wg.xProperty().bind(realX);
             wg.yProperty().bind(realY);
             wg.widthProperty().bind(realWidth);
@@ -122,6 +152,31 @@ public class LevelGui extends ParentableAbstractGui {
             lineGui.fromY().number(level.wallPositions().get(wall.pos1Index()).y() * realHeight.floatValue() + realY.floatValue());
             lineGui.toX().number(level.wallPositions().get(wall.pos2Index()).x() * realWidth.floatValue() + realX.floatValue());
             lineGui.toY().number(level.wallPositions().get(wall.pos2Index()).y() * realHeight.floatValue() + realY.floatValue());
+        }
+    }
+
+    private class OrbitGui extends ParentableAbstractGui {
+        private final Orbit orbit;
+        private final TextureGui textureGui;
+
+        public OrbitGui(OrbitsGame orbits, Orbit orbit) throws GameException {
+            super(orbits.launcher());
+            this.orbit = orbit;
+            this.textureGui = launcher().guiManager().createGui(TextureGui.class);
+            System.out.println("create");
+            textureGui.texture().uploadAsync(launcher().resourceLoader().resource(orbits.key().withKey("textures/ball.png").toPath(launcher().assets())).newResourceStream()).thenRun(()->{
+                System.out.println("redraw");
+                redraw();
+            });
+            addGUI(textureGui);
+        }
+
+        public void recalc() {
+            System.out.println("recalc");
+            textureGui.widthProperty().number(orbit.radius());
+            textureGui.heightProperty().number(orbit.radius());
+            textureGui.xProperty().number(orbit.position().x() * realWidth.floatValue() + realX.floatValue());
+            textureGui.yProperty().number(orbit.position().y() * realHeight.floatValue() + realY.floatValue());
         }
     }
 }

@@ -18,4 +18,19 @@ public class Orbit implements DataSerializable {
         buffer.read(position);
         radius = buffer.readDouble();
     }
+
+    public Position position() {
+        return position;
+    }
+
+    public void radius(double radius) {
+        this.radius = radius;
+    }
+
+    public double radius() {
+        return radius;
+    }
+
+    public void recalcBody() {
+    }
 }
