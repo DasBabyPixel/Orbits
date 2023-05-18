@@ -7,7 +7,6 @@ import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.ScrollGui;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.function.GameConsumer;
-import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
 import orbits.data.level.Level;
@@ -53,6 +52,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         scrollGui.widthProperty().bind(widthProperty().subtract(inset.multiply(2)));
         scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)).subtract(newLevel.heightProperty()));
         scrollGui.gui().value(new LevelsGui(orbits));
+        scrollGui.gui().value().widthProperty().bind(widthProperty().subtract(inset.multiply(2)).subtract(17));
         addGUI(scrollGui);
     }
 
@@ -74,25 +74,27 @@ public class LevelSelectGui extends ParentableAbstractGui {
             super(orbits.launcher());
 
             NumberValue x = xProperty();
-            boolean first = true;
             NumberValue y = yProperty();
+            NumberValue height = NumberValue.withValue(0D);
             for (UUID levelId : levels) {
                 Level level = orbits.levelStorage().findLevel(levelId, -1);
                 LevelGui levelGui = new LevelGui(orbits, level);
                 ButtonGui button = launcher().guiManager().createGui(ButtonGui.class);
-                if (first) first = false;
-                else y = y.add(240);
 
                 button.xProperty().bind(x);
                 button.yProperty().bind(y);
-                button.width((float) (200 * 16) / 9);
-                button.height(200);
+                button.widthProperty().bind(widthProperty());
+                button.heightProperty().bind(widthProperty().divide(level.aspectRatioWpH()));
                 button.onButtonPressed(e -> levelSelector.value().accept(level));
                 button.foreground().value(levelGui);
                 addGUI(button);
+                height = height.add(button.heightProperty());
+                if (levelId != levels[levels.length - 1]) {
+                    height = height.add(50);
+                    y = y.add(button.heightProperty()).add(50);
+                }
             }
-            widthProperty().number(300);
-            heightProperty().number(levels.length * 240);
+            heightProperty().bind(height);
         }
     }
 }
