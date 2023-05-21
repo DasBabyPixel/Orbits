@@ -12,7 +12,6 @@ import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import orbits.data.LevelStorage;
 import orbits.gui.CustomGui;
-import orbits.gui.OrbitsMainScreenGui;
 import orbits.gui.OrbitsPressToPlay;
 import orbits.gui.TextureStorage;
 import orbits.lobby.Lobby;
@@ -36,9 +35,6 @@ public class OrbitsGame extends Game {
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
 //        packetHandlers().registerHandlers();
-        launcher().frame().frameCounter().addAvgUpdateListener(f->{
-            System.out.println("FPS: " + f);
-        });
     }
 
     @Override

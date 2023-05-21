@@ -1,23 +1,15 @@
 package orbits.gui;
 
-import gamelauncher.engine.GameLauncher;
-import gamelauncher.engine.event.events.util.keybind.KeybindEntryEvent;
-import gamelauncher.engine.gui.Gui;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.ColorGui;
 import gamelauncher.engine.gui.guis.TextGui;
-import gamelauncher.engine.util.Color;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
-import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
 import gamelauncher.engine.util.text.Component;
-import jdk.dynalink.linker.LinkerServices;
 import orbits.OrbitsGame;
 import orbits.data.LocalPlayer;
-import orbits.data.Orbit;
-import orbits.data.Player;
 import orbits.data.level.Level;
 import orbits.lobby.Lobby;
 import org.joml.Vector4f;
@@ -56,13 +48,13 @@ public class StartSingleplayerGui extends ParentableAbstractGui {
         start.widthProperty().bind(back.widthProperty());
         ((ButtonGui.Simple.TextForeground) start.foreground().value()).textGui().text().value(Component.text("Start"));
         start.onButtonPressed(event -> {
+            if (level.startPositions().isEmpty()) return;
             if (players.size() >= 2) {
                 Lobby l = orbits.currentLobby();
                 for (int i = 0; i < players.size(); i++) {
                     int id = players.get(i);
                     PlayerGui pg = playerGuis.get(i);
-                    LocalPlayer player = new LocalPlayer();
-                    player.keybindId(id);
+                    LocalPlayer player = new LocalPlayer(id, pg.display.charAt(0));
                     player.color().x(pg.color.x);
                     player.color().y(pg.color.y);
                     player.color().z(pg.color.z);
@@ -91,7 +83,7 @@ public class StartSingleplayerGui extends ParentableAbstractGui {
                 }
                 pg.yProperty().unbind();
                 removeGUI(pg);
-            } else {
+            } else if (ke.character() != ' ') {
                 players.add(ke.keybind().uniqueId());
                 PlayerGui pg = new PlayerGui(orbits, Character.toString(ke.character()), newColor());
                 pg.xProperty().bind(xProperty().add(10));

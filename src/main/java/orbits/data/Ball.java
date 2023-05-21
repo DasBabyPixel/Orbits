@@ -1,10 +1,10 @@
 package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
-import org.dyn4j.dynamics.Body;
-import org.dyn4j.geometry.Geometry;
+import gamelauncher.engine.render.GameItem;
 
 public class Ball extends Entity {
+    public GameItem ballItem;
     private final Position position = new Position(0, 0);
     private final Vector2 motion = new Vector2();
     private final Vector3 color = new Vector3();
