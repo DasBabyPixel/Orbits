@@ -14,6 +14,7 @@ import orbits.data.Orbit;
 import orbits.data.Position;
 import orbits.data.Wall;
 import orbits.data.level.Level;
+import orbits.data.level.StartPosition;
 import orbits.data.level.TransactionTracker;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class MapEditorGui extends ParentableAbstractGui {
     private final HighlightCircleGui highlightCircleGui;
     private final NewWallHandler newWallHandler = new NewWallHandler();
     private final NewOrbitHandler newOrbitHandler = new NewOrbitHandler();
+    private final NewSpawnpointHandler newSpawnpointHandler = new NewSpawnpointHandler();
     private ButtonGui selected = null;
     private SelectedHandler selectedHandler = null;
 
@@ -55,16 +57,16 @@ public class MapEditorGui extends ParentableAbstractGui {
         NumberValue editorWidth = widthProperty().subtract(editorX).subtract(guiX);
         NumberValue editorHeight = heightProperty().subtract(editorY).subtract(guiY);
 
-        ButtonGui saveAndExit = createButton();
-        saveAndExit.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
-        saveAndExit.yProperty().bind(calcy(6, rowHeight, spacing, guiY));
-        saveAndExit.widthProperty().bind(columnWidth);
-        saveAndExit.heightProperty().bind(rowHeight);
+        ButtonGui save = createButton();
+        save.xProperty().bind(calcx(0, columnWidth, spacing, guiX));
+        save.yProperty().bind(calcy(6, rowHeight, spacing, guiY));
+        save.widthProperty().bind(columnWidth);
+        save.heightProperty().bind(rowHeight);
         textureGui = launcher().guiManager().createGui(TextureGui.class);
         textureGui.texture(orbits.textureStorage().texture("save.png"));
-        saveAndExit.foreground().value(textureGui);
-        saveAndExit.onButtonPressed(event -> orbits.levelStorage().saveLevel(level));
-        addGUI(saveAndExit);
+        save.foreground().value(textureGui);
+        save.onButtonPressed(event -> orbits.levelStorage().saveLevel(level));
+        addGUI(save);
 
         ButtonGui exit = createButton();
         exit.xProperty().bind(calcx(1, columnWidth, spacing, guiX));
@@ -74,7 +76,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         textureGui = launcher().guiManager().createGui(TextureGui.class);
         textureGui.texture(orbits.textureStorage().texture("exit.png"));
         exit.foreground().value(textureGui);
-        exit.onButtonPressed(event -> launcher().guiManager().openGuiByClass(MainScreenGui.class));
+        exit.onButtonPressed(event -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
         addGUI(exit);
 
         ButtonGui newOrbit = createButton();
@@ -93,7 +95,9 @@ public class MapEditorGui extends ParentableAbstractGui {
         newWall.yProperty().bind(calcy(5, rowHeight, spacing, guiY));
         newWall.widthProperty().bind(columnWidth);
         newWall.heightProperty().bind(rowHeight);
-        ((ButtonGui.Simple.TextForeground) newWall.foreground().value()).textGui().text().value(Component.text("Wall"));
+        textureGui = launcher().guiManager().createGui(TextureGui.class);
+        textureGui.texture(orbits.textureStorage().texture("wall.png"));
+        newWall.foreground().value(textureGui);
         newWall.onButtonPressed(event -> select(newWall, newWallHandler));
         addGUI(newWall);
 
@@ -102,8 +106,11 @@ public class MapEditorGui extends ParentableAbstractGui {
         newSpawnpoint.yProperty().bind(calcy(4, rowHeight, spacing, guiY));
         newSpawnpoint.widthProperty().bind(columnWidth);
         newSpawnpoint.heightProperty().bind(rowHeight);
-        ((ButtonGui.Simple.TextForeground) newSpawnpoint.foreground().value()).textGui().text().value(Component.text("Spawn"));
+        textureGui = launcher().guiManager().createGui(TextureGui.class);
+        textureGui.texture(orbits.textureStorage().texture("spawnpoint.png"));
+        newSpawnpoint.foreground().value(textureGui);
         newSpawnpoint.onButtonPressed(event -> select(newSpawnpoint, null));
+        newSpawnpoint.onButtonPressed(event -> select(newSpawnpoint, newSpawnpointHandler));
         addGUI(newSpawnpoint);
 
         ButtonGui grid = createButton();
@@ -167,7 +174,7 @@ public class MapEditorGui extends ParentableAbstractGui {
         move.foreground().value(textureGui);
         addGUI(move);
 
-        levelGui = new LevelGui(orbits, level);
+        levelGui = new LevelGui(orbits, level, true);
         levelGui.xProperty().bind(editorX);
         levelGui.yProperty().bind(editorY);
         levelGui.widthProperty().bind(editorWidth);
@@ -296,13 +303,6 @@ public class MapEditorGui extends ParentableAbstractGui {
         }
     }
 
-    private class SpawnpointGui extends ParentableAbstractGui {
-
-        public SpawnpointGui(GameLauncher launcher) {
-            super(launcher);
-        }
-    }
-
     private class GridGui extends ParentableAbstractGui {
 
         public GridGui() throws GameException {
@@ -340,6 +340,25 @@ public class MapEditorGui extends ParentableAbstractGui {
         }
     }
 
+    private class NewSpawnpointHandler implements SelectedHandler {
+        @Override
+        public void handle(KeybindEvent event) throws GameException {
+            if (event instanceof MouseButtonKeybindEvent) {
+                MouseButtonKeybindEvent mb = (MouseButtonKeybindEvent) event;
+                if (mb.type() != MouseButtonKeybindEvent.Type.PRESS) return;
+                Position pos = new Position((mb.mouseX() - levelGui.realX().floatValue()) / levelGui.realWidth().floatValue(), (mb.mouseY() - levelGui.realY().floatValue()) / levelGui.realHeight().floatValue());
+                grid.snap(pos);
+                if (pos.x() < 0 || pos.y() < 0 || pos.x() > 1 || pos.y() > 1) return;
+                StartPosition spawnpoint = new StartPosition();
+                spawnpoint.radius(0.1);
+                spawnpoint.position().x(pos.x());
+                spawnpoint.position().y(pos.y());
+                level.startPositions().add(spawnpoint);
+                levelGui.update(spawnpoint);
+            }
+        }
+    }
+
     private class NewOrbitHandler implements SelectedHandler {
 
         @Override
@@ -351,10 +370,9 @@ public class MapEditorGui extends ParentableAbstractGui {
                 grid.snap(pos);
                 if (pos.x() < 0 || pos.y() < 0 || pos.x() > 1 || pos.y() > 1) return;
                 Orbit orbit = new Orbit();
-                orbit.radius(0.15);
+                orbit.radius(0.1);
                 orbit.position().x(pos.x());
                 orbit.position().y(pos.y());
-                orbit.recalcBody();
                 level.orbits().add(orbit);
                 levelGui.update(orbit);
             }
@@ -378,10 +396,9 @@ public class MapEditorGui extends ParentableAbstractGui {
                 if (currentPositions.size() >= 3 && currentPositions.get(0).distanceSquared(pos) < 0.00005) {
                     pos = currentPositions.get(0);
                     Position last = currentPositions.get(currentPositions.size() - 1);
-                    Wall wall = new Wall(level);
+                    Wall wall = new Wall();
                     wall.pos1Index(level.wallPositions().indexOf(pos));
                     wall.pos2Index(level.wallPositions().indexOf(last));
-                    wall.recalcBody();
                     currentWalls.add(wall);
                     level.walls().add(wall);
                     levelGui.update(wall);
@@ -394,10 +411,9 @@ public class MapEditorGui extends ParentableAbstractGui {
                 currentPositions.add(pos);
                 level.wallPositions().add(pos);
                 if (currentPositions.size() >= 2) {
-                    Wall wall = new Wall(level);
+                    Wall wall = new Wall();
                     wall.pos1Index(level.wallPositions().size() - 1);
                     wall.pos2Index(level.wallPositions().indexOf(currentPositions.get(currentPositions.size() - 2)));
-                    wall.recalcBody();
                     currentWalls.add(wall);
                     level.walls().add(wall);
                     levelGui.update(wall);

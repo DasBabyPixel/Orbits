@@ -53,7 +53,7 @@ public class PacketHandlers {
 
         });
     };
-    private final PacketHandler<StartPacket> startPacket = packet -> orbits.launcher().gameThread().runLater(() -> orbits.currentLobby().start());
+    private final PacketHandler<StartPacket> startPacket = packet -> orbits.launcher().gameThread().runLater(() -> orbits.currentLobby().start(orbits));
 
     public PacketHandlers(OrbitsGame orbits) {
         this.orbits = orbits;

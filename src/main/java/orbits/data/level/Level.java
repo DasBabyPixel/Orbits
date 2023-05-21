@@ -16,7 +16,7 @@ public class Level implements DataSerializable {
     private final List<StartPosition> startPositions = new ArrayList<>();
     private final List<Position> wallPositions = new ArrayList<>();
     private final List<Wall> walls = new ArrayList<>();
-    private final int dataVersion = 3;
+    private final int dataVersion = 4;
     private final AspectRatio aspectRatio = new AspectRatio(16, 9);
     private UUID uuid;
     private long checksum = -1L; // Not serialized, set and read by code
@@ -80,23 +80,31 @@ public class Level implements DataSerializable {
             buffer.readList(orbits, Orbit::new);
             buffer.readList(startPositions, StartPosition::new);
             buffer.readList(wallPositions, Position::new);
-            buffer.readList(walls, () -> new Wall(this));
+            buffer.readList(walls, Wall::new);
         } else if (dataVersion == 2) {
             buffer.readFloat(); // aspect ratio
             uuid = new UUID(buffer.readLong(), buffer.readLong());
             buffer.readList(orbits, Orbit::new);
             buffer.readList(startPositions, StartPosition::new);
             buffer.readList(wallPositions, Position::new);
-            buffer.readList(walls, () -> new Wall(this));
+            buffer.readList(walls, Wall::new);
         } else if (dataVersion == 3) {
             buffer.read(aspectRatio);
             uuid = new UUID(buffer.readLong(), buffer.readLong());
             buffer.readList(orbits, Orbit::new);
             buffer.readList(startPositions, StartPosition::new);
+            for (Orbit orbit : orbits) orbit.radius(orbit.radius() / 2);
             buffer.readList(wallPositions, Position::new);
-            buffer.readList(walls, () -> new Wall(this));
+            buffer.readList(walls, Wall::new);
+        } else if (dataVersion == 4) {
+            buffer.read(aspectRatio);
+            uuid = new UUID(buffer.readLong(), buffer.readLong());
+            buffer.readList(orbits, Orbit::new);
+            buffer.readList(startPositions, StartPosition::new);
+            buffer.readList(wallPositions, Position::new);
+            buffer.readList(walls, Wall::new);
         } else {
-            throw new UnsupportedOperationException("Invalid DataVersion");
+            throw new UnsupportedOperationException("Invalid DataVersion: " + dataVersion);
         }
     }
 
@@ -111,6 +119,7 @@ public class Level implements DataSerializable {
     public static class AspectRatio implements DataSerializable {
         private int width;
         private int height;
+        private float wph;
 
         public AspectRatio(int width, int height) {
             this.width = width;
@@ -130,6 +139,7 @@ public class Level implements DataSerializable {
         public void read(DataBuffer buffer) {
             width = buffer.readInt();
             height = buffer.readInt();
+            wph = (float)width/(float)height;
         }
 
         public int width() {
@@ -138,6 +148,7 @@ public class Level implements DataSerializable {
 
         public void width(int width) {
             this.width = width;
+            wph = (float) width / (float) height;
         }
 
         public int height() {
@@ -146,10 +157,11 @@ public class Level implements DataSerializable {
 
         public void height(int height) {
             this.height = height;
+            wph = (float) width / (float) height;
         }
 
         public float WpH() {
-            return (float) width / (float) height;
+            return wph;
         }
     }
 }

@@ -1,6 +1,7 @@
 package orbits.physics;
 
 import org.dyn4j.dynamics.Body;
+import org.dyn4j.dynamics.ContinuousDetectionMode;
 import org.dyn4j.world.World;
 
 import java.util.ArrayList;
@@ -9,24 +10,26 @@ import java.util.List;
 public class PhysicsEngine {
 
     private final World<Body> world = new World<>();
-    private final List<Collidable> collidables = new ArrayList<>();
     private long lastTick;
 
     public PhysicsEngine() {
-        world.setGravity(0, 0);
+        world.setGravity(World.ZERO_GRAVITY);
+        world.getSettings().setContinuousDetectionMode(ContinuousDetectionMode.BULLETS_ONLY);
+    }
+
+    public World<Body> world() {
+        return world;
     }
 
     public void tick() {
-
+        world.step(1);
     }
 
-    public void add(Collidable collidable) {
-        collidables.add(collidable);
-        world.addBody(collidable.body());
+    public void add(Body body) {
+        world.addBody(body);
     }
 
-    public void remove(Collidable collidable) {
-        collidables.remove(collidable);
-        world.removeBody(collidable.body());
+    public void remove(Body body) {
+        world.removeBody(body);
     }
 }

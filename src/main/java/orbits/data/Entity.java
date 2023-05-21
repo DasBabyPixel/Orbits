@@ -2,8 +2,14 @@ package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.data.DataSerializable;
+import gamelauncher.engine.render.GameItem;
+import org.dyn4j.dynamics.Body;
+import org.dyn4j.geometry.MassType;
 
 public class Entity implements DataSerializable {
+
+    public GameItem gameItem;
+    public GameItem.GameItemModel model;
 
     private int entityId;
 

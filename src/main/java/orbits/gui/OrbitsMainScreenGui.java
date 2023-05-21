@@ -13,34 +13,41 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         super(orbits.launcher());
         NumberValue height = heightProperty().divide(7);
         NumberValue width = height.multiply(5);
+        ButtonGui multiplayer = launcher().guiManager().createGui(ButtonGui.class);
+        ((ButtonGui.Simple.TextForeground) multiplayer.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("multiplayer"))));
+        multiplayer.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(multiplayer.widthProperty()));
+        multiplayer.yProperty().bind(yProperty().add(heightProperty().divide(2)).subtract(multiplayer.heightProperty().divide(2)));
+        multiplayer.widthProperty().bind(width);
+        multiplayer.heightProperty().bind(height);
+        addGUI(multiplayer);
+
+        ButtonGui singleplayer = launcher().guiManager().createGui(ButtonGui.class);
+        ((ButtonGui.Simple.TextForeground) singleplayer.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("singleplayer"))));
+        singleplayer.widthProperty().bind(width);
+        singleplayer.heightProperty().bind(height);
+        singleplayer.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(singleplayer.widthProperty()));
+        singleplayer.yProperty().bind(multiplayer.yProperty().add(singleplayer.heightProperty().multiply(1.5)));
+        singleplayer.onButtonPressed(event -> {
+            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits, false);
+            levelSelectGui.exit().onButtonPressed(e1 -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
+            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartSingleplayerGui(level, orbits)));
+            launcher().guiManager().openGui(levelSelectGui);
+        });
+        addGUI(singleplayer);
+
         ButtonGui mapEditor = launcher().guiManager().createGui(ButtonGui.class);
         ((ButtonGui.Simple.TextForeground) mapEditor.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("map_editor"))));
         mapEditor.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(mapEditor.widthProperty()));
-        mapEditor.yProperty().bind(yProperty().add(heightProperty().divide(2)).subtract(mapEditor.heightProperty().divide(2)));
+        mapEditor.yProperty().bind(multiplayer.yProperty().subtract(mapEditor.heightProperty().multiply(1.5)));
         mapEditor.widthProperty().bind(width);
         mapEditor.heightProperty().bind(height);
         mapEditor.onButtonPressed(event -> {
-            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits);
+            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits, true);
             levelSelectGui.exit().onButtonPressed(e -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
             levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new MapEditorGui(orbits, level)));
             launcher().guiManager().openGui(levelSelectGui);
         });
         addGUI(mapEditor);
-        ButtonGui settings = launcher().guiManager().createGui(ButtonGui.class);
-
-        ((ButtonGui.Simple.TextForeground) settings.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("settings"))));
-        settings.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(settings.widthProperty()));
-        settings.yProperty().bind(mapEditor.yProperty().subtract(settings.heightProperty().multiply(1.5)));
-        settings.widthProperty().bind(width);
-        settings.heightProperty().bind(height);
-        addGUI(settings);
-        ButtonGui play = launcher().guiManager().createGui(ButtonGui.class);
-        ((ButtonGui.Simple.TextForeground) play.foreground().value()).textGui().text().value(Component.text(launcher().languageManager().selectedLanguage().translate(orbits.key().withKey("play"))));
-        play.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(play.widthProperty()));
-        play.yProperty().bind(mapEditor.yProperty().add(play.heightProperty().multiply(1.5)));
-        play.widthProperty().bind(width);
-        play.heightProperty().bind(height);
-        addGUI(play);
 
 //        TextureGui gui = launcher().guiManager().createGui(TextureGui.class);
 //        gui.widthProperty().bind(widthProperty());
@@ -49,7 +56,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
 //        gui.yProperty().bind(yProperty());
 //
 //        gui.texture().uploadAsync(launcher().resourceLoader()
-//                        .resource(launcher.assets().resolve("12orbits.png")).newResourceStream())
+//                        .resource(launcher.assets().resolve("pressToPlay.png")).newResourceStream())
 //                .thenRun(() -> {
 //                    gui.widthProperty().unbind();
 //                    gui.heightProperty().unbind();

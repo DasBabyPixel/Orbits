@@ -30,7 +30,4 @@ public class Orbit implements DataSerializable {
     public double radius() {
         return radius;
     }
-
-    public void recalcBody() {
-    }
 }

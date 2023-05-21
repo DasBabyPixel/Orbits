@@ -1,20 +1,13 @@
 package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
-import gamelauncher.engine.data.DataSerializable;
+import org.dyn4j.dynamics.Body;
+import org.dyn4j.geometry.Geometry;
 
 public class Ball extends Entity {
     private final Position position = new Position(0, 0);
     private final Vector2 motion = new Vector2();
-    private double radius;
-
-    public void radius(double radius) {
-        this.radius = radius;
-    }
-
-    public double radius() {
-        return radius;
-    }
+    private final Vector3 color = new Vector3();
 
     public Vector2 motion() {
         return motion;
@@ -24,12 +17,16 @@ public class Ball extends Entity {
         return position;
     }
 
+    public Vector3 color() {
+        return color;
+    }
+
     @Override
     public void write(DataBuffer buffer) {
         super.write(buffer);
         buffer.write(position);
         buffer.write(motion);
-        buffer.writeDouble(radius);
+        buffer.write(color);
     }
 
     @Override
@@ -37,6 +34,6 @@ public class Ball extends Entity {
         super.read(buffer);
         buffer.read(position);
         buffer.read(motion);
-        radius = buffer.readDouble();
+        buffer.read(color);
     }
 }

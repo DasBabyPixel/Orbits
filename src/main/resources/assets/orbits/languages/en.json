@@ -1,5 +1,5 @@
 {
-  "orbits:play": "Play",
-  "orbits:settings": "Settings",
+  "orbits:singleplayer": "Singleplayer",
+  "orbits:multiplayer": "Multiplayer",
   "orbits:map_editor": "Map Editor"
 }

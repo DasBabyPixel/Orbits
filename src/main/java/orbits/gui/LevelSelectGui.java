@@ -19,7 +19,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
     private final Property<GameConsumer<Level>> levelSelector = Property.empty();
     private final UUID[] levels;
 
-    public LevelSelectGui(OrbitsGame orbits) throws GameException {
+    public LevelSelectGui(OrbitsGame orbits, boolean displayStartPositions) throws GameException {
         super(orbits.launcher());
         exit = launcher().guiManager().createGui(ButtonGui.class);
         NumberValue inset = widthProperty().divide(70).min(heightProperty().divide(70));
@@ -51,7 +51,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         scrollGui.yProperty().bind(yProperty().add(inset));
         scrollGui.widthProperty().bind(widthProperty().subtract(inset.multiply(2)));
         scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)).subtract(newLevel.heightProperty()));
-        scrollGui.gui().value(new LevelsGui(orbits));
+        scrollGui.gui().value(new LevelsGui(orbits, displayStartPositions));
         scrollGui.gui().value().widthProperty().bind(widthProperty().subtract(inset.multiply(2)).subtract(17));
         addGUI(scrollGui);
     }
@@ -70,7 +70,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
 
     private class LevelsGui extends ParentableAbstractGui {
 
-        public LevelsGui(OrbitsGame orbits) throws GameException {
+        public LevelsGui(OrbitsGame orbits, boolean displayStartPositions) throws GameException {
             super(orbits.launcher());
 
             NumberValue x = xProperty();
@@ -78,7 +78,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
             NumberValue height = NumberValue.withValue(0D);
             for (UUID levelId : levels) {
                 Level level = orbits.levelStorage().findLevel(levelId, -1);
-                LevelGui levelGui = new LevelGui(orbits, level);
+                LevelGui levelGui = new LevelGui(orbits, level, displayStartPositions);
                 ButtonGui button = launcher().guiManager().createGui(ButtonGui.class);
 
                 button.xProperty().bind(x);

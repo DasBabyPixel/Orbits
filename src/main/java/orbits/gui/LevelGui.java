@@ -14,6 +14,7 @@ import orbits.OrbitsGame;
 import orbits.data.Orbit;
 import orbits.data.Wall;
 import orbits.data.level.Level;
+import orbits.data.level.StartPosition;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,14 +26,17 @@ public class LevelGui extends ParentableAbstractGui {
     private final OrbitsGame orbitsGame;
     private final Map<Wall, WallGui> walls = new HashMap<>();
     private final Map<Orbit, OrbitGui> orbits = new HashMap<>();
+    private final Map<StartPosition, StartPositionGui> startPositions = new HashMap<>();
     private final Set<Gui> guis = new HashSet<>();
     private final NumberValue realX;
     private final NumberValue realY;
     private final NumberValue realWidth;
     private final NumberValue realHeight;
+    private final boolean displayStartPositions;
 
-    public LevelGui(OrbitsGame orbits, Level level) throws GameException {
+    public LevelGui(OrbitsGame orbits, Level level, boolean displayStartPositions) throws GameException {
         super(orbits.launcher());
+        this.displayStartPositions = displayStartPositions;
         this.orbitsGame = orbits;
         this.level = level;
         float aspectRatio = level.aspectRatioWpH();
@@ -69,6 +73,9 @@ public class LevelGui extends ParentableAbstractGui {
         }
         for (Orbit orbit : level.orbits()) {
             update(orbit);
+        }
+        for (StartPosition startPosition : level.startPositions()) {
+            update(startPosition);
         }
     }
 
@@ -116,12 +123,39 @@ public class LevelGui extends ParentableAbstractGui {
         }
     }
 
+    public void remove(StartPosition startPosition) {
+        StartPositionGui spg = startPositions.remove(startPosition);
+        if (spg != null) {
+            removeGUI(spg);
+            guis.remove(spg);
+        }
+    }
+
     public void updateAll() throws GameException {
         for (Wall wall : walls.keySet()) {
             update(wall);
         }
         for (Orbit orbit : orbits.keySet()) {
             update(orbit);
+        }
+        for (StartPosition startPosition : startPositions.keySet()) {
+            update(startPosition);
+        }
+    }
+
+    public void update(StartPosition startPosition) throws GameException {
+        if (displayStartPositions) {
+            if (!startPositions.containsKey(startPosition)) {
+                StartPositionGui spg = new StartPositionGui(orbitsGame, startPosition);
+                spg.xProperty().bind(realX);
+                spg.yProperty().bind(realY);
+                spg.widthProperty().bind(realWidth);
+                spg.heightProperty().bind(realHeight);
+                spg.recalc();
+                startPositions.put(startPosition, spg);
+                addGUI(spg);
+                guis.add(spg);
+            } else startPositions.get(startPosition).recalc();
         }
     }
 
@@ -155,6 +189,26 @@ public class LevelGui extends ParentableAbstractGui {
 
     public Level level() {
         return level;
+    }
+
+    private class StartPositionGui extends ParentableAbstractGui {
+        private final StartPosition startPosition;
+        private final TextureGui textureGui;
+
+        public StartPositionGui(OrbitsGame orbits, StartPosition startPosition) throws GameException {
+            super(orbits.launcher());
+            this.startPosition = startPosition;
+            textureGui = launcher().guiManager().createGui(TextureGui.class);
+            textureGui.texture(orbits.textureStorage().texture("spawnpoint.png"));
+            addGUI(textureGui);
+        }
+
+        public void recalc() {
+            textureGui.widthProperty().number(startPosition.radius() * realHeight.floatValue() * 2);
+            textureGui.heightProperty().number(startPosition.radius() * realHeight.floatValue() * 2);
+            textureGui.xProperty().number(startPosition.position().x() * realWidth.floatValue() + realX.floatValue() - textureGui.width() / 2);
+            textureGui.yProperty().number(startPosition.position().y() * realHeight.floatValue() + realY.floatValue() - textureGui.height() / 2);
+        }
     }
 
     private class WallGui extends ParentableAbstractGui {
@@ -191,8 +245,8 @@ public class LevelGui extends ParentableAbstractGui {
         }
 
         public void recalc() {
-            textureGui.widthProperty().number(orbit.radius() * realHeight.floatValue());
-            textureGui.heightProperty().number(orbit.radius() * realHeight.floatValue());
+            textureGui.widthProperty().number(orbit.radius() * realHeight.floatValue() * 2);
+            textureGui.heightProperty().number(orbit.radius() * realHeight.floatValue() * 2);
             textureGui.xProperty().number(orbit.position().x() * realWidth.floatValue() + realX.floatValue() - textureGui.width() / 2);
             textureGui.yProperty().number(orbit.position().y() * realHeight.floatValue() + realY.floatValue() - textureGui.height() / 2);
         }
