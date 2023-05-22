@@ -2,6 +2,7 @@ package orbits.gui;
 
 import de.dasbabypixel.api.property.NumberValue;
 import gamelauncher.engine.gui.ParentableAbstractGui;
+import gamelauncher.engine.gui.guis.ColorGui;
 import gamelauncher.engine.render.ContextProvider;
 import gamelauncher.engine.render.DrawContext;
 import gamelauncher.engine.render.GameItem;
@@ -37,6 +38,14 @@ public class IngameGui extends ParentableAbstractGui {
         super(orbits.launcher());
         this.orbits = orbits;
         lobby = orbits.currentLobby();
+        ColorGui background = launcher().guiManager().createGui(ColorGui.class);
+        background.color().set(.5F,.5F,.5F,1);
+        background.xProperty().bind(xProperty());
+        background.yProperty().bind(yProperty());
+        background.widthProperty().bind(widthProperty());
+        background.heightProperty().bind(heightProperty());
+        addGUI(background);
+
         levelGui = new LevelGui(orbits, lobby.level(), false);
         levelGui.widthProperty().bind(widthProperty());
         levelGui.heightProperty().bind(heightProperty());

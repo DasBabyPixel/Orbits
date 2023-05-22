@@ -9,6 +9,7 @@ import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
 public class CustomGui extends ButtonGui.Simple {
     public CustomGui(GameLauncher launcher) throws GameException {
         super(launcher);
+        ((ColorBackground) this.background().value()).defaultColor().set(0, 0, 0, 0);
     }
 
     @Override

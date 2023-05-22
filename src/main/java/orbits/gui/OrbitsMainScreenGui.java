@@ -11,6 +11,14 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
 
     public OrbitsMainScreenGui(OrbitsGame orbits) throws GameException {
         super(orbits.launcher());
+
+        TextureBackgroundGui gui = new TextureBackgroundGui(orbits, "textures/background1.png");
+        gui.widthProperty().bind(widthProperty());
+        gui.heightProperty().bind(heightProperty());
+        gui.xProperty().bind(xProperty());
+        gui.yProperty().bind(yProperty());
+        addGUI(gui);
+
         NumberValue height = heightProperty().divide(7);
         NumberValue width = height.multiply(5);
         ButtonGui multiplayer = launcher().guiManager().createGui(ButtonGui.class);
