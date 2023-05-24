@@ -35,10 +35,6 @@ public class Position implements DataSerializable {
         this.y = y;
     }
 
-    public Vector2 physicsVector() {
-        return new Vector2(x, y);
-    }
-
     public double distanceSquared(Position other) {
         double x1 = x - other.x;
         double y1 = y - other.y;

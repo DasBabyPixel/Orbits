@@ -42,4 +42,9 @@ public class Vector2 implements DataSerializable {
         x = buffer.readDouble();
         y = buffer.readDouble();
     }
+
+    public void multiply(double i) {
+        this.x *= i;
+        this.y *= i;
+    }
 }

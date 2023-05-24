@@ -7,9 +7,9 @@ import orbits.data.*;
 import orbits.data.level.Level;
 import orbits.data.level.StartPosition;
 import orbits.physics.PhysicsEngine;
+import org.dyn4j.collision.Filter;
 import org.dyn4j.dynamics.Body;
 import org.dyn4j.dynamics.BodyFixture;
-import org.dyn4j.dynamics.Settings;
 import org.dyn4j.dynamics.contact.Contact;
 import org.dyn4j.geometry.Geometry;
 import org.dyn4j.geometry.Mass;
@@ -31,10 +31,11 @@ public class Lobby {
     private final Int2ObjectMap<Entity> entities = new Int2ObjectLinkedOpenHashMap<>();
     private final PhysicsEngine physicsEngine = new PhysicsEngine(this);
     private float scale = 1;
-    private float speed = 0.15F;
-    private int entityIdCounter = 0;
+    private float speed = 0.65F;
+    private int entityIdCounter = 1;
     private Level level;
     private float playerSize = 0.03F;
+    private float spawnSpeed = 40F;
     private OrbitsGame orbitsGame;
 
     public Lobby() {
@@ -47,25 +48,50 @@ public class Lobby {
     public void start(OrbitsGame orbitsGame) {
         level = availableData.level;
         World<Body> world = physicsEngine.world();
-        world.getSettings().setBaumgarte(Settings.DEFAULT_BAUMGARTE / 20);
-        world.getSettings().setLinearTolerance(Settings.DEFAULT_LINEAR_TOLERANCE / 100);
         world.addContactListener(new ContactListenerAdapter<>() {
             @Override
             public void end(ContactCollisionData<Body> collision, Contact contact) {
-                collision.getBody1().getLinearVelocity().normalize();
-                collision.getBody1().getLinearVelocity().multiply(speed);
-                collision.getBody2().getLinearVelocity().normalize();
-                collision.getBody2().getLinearVelocity().multiply(speed);
+                Body b1 = collision.getBody1();
+                Body b2 = collision.getBody2();
+                work(b1);
+                work(b2);
+            }
 
-                if (collision.getBody1().getUserData() instanceof Ball) {
-                    Ball ball = (Ball) collision.getBody1().getUserData();
-                    ball.motion().x(toLocalSpaceX(collision.getBody1().getLinearVelocity().x));
-                    ball.motion().y(collision.getBody1().getLinearVelocity().y);
+            @Override
+            public void begin(ContactCollisionData<Body> collision, Contact contact) {
+                Body b1 = collision.getBody1();
+                Body b2 = collision.getBody2();
+                if (b1.getUserData() instanceof Player && b2.getUserData() instanceof Ball)
+                    begin(((Player) b1.getUserData()), ((Ball) b2.getUserData()));
+                if (b2.getUserData() instanceof Player && b1.getUserData() instanceof Ball)
+                    begin(((Player) b2.getUserData()), ((Ball) b1.getUserData()));
+            }
+
+            private void begin(Player player, Ball ball) {
+                if (ball instanceof Player) return;
+                if (ball.ownerId() != 0) {
+                    if (ball.ownerId() == player.ownerId()) return;
+                    kill(player);
+                    return;
                 }
-                if (collision.getBody2().getUserData() instanceof Ball) {
-                    Ball ball = (Ball) collision.getBody2().getUserData();
-                    ball.motion().x(toLocalSpaceX(collision.getBody2().getLinearVelocity().x));
-                    ball.motion().y(collision.getBody2().getLinearVelocity().y);
+                Ball last = player;
+                while (last.pull() != null) last = last.pull();
+                last.pull(ball);
+
+                ball.ownerId(player.entityId());
+                ball.color().set(player.color());
+            }
+
+            private void work(Body body) {
+                if (body.getUserData() instanceof Player) {
+                    Ball ball = (Ball) body.getUserData();
+                    body.getLinearVelocity().normalize();
+                    float speed = speed();
+                    if (ball instanceof Player) speed = ((Player) ball).calculateSpeed(Lobby.this);
+                    body.getLinearVelocity().multiply(speed);
+
+                    ball.motion().x(toLocalSpaceX(body.getLinearVelocity().x));
+                    ball.motion().y(body.getLinearVelocity().y);
                 }
             }
         });
@@ -82,6 +108,7 @@ public class Lobby {
 
             BodyFixture f = body.addFixture(Geometry.createSegment(pos1, pos2), 1, 0, 1);
             f.setRestitutionVelocity(0);
+            f.setFilter(new BallFilter(null, BallFilter.TYPE_WALL));
             body.setMass(MassType.INFINITE);
             world.addBody(body);
         }
@@ -114,21 +141,49 @@ public class Lobby {
             if (entity instanceof Ball) {
                 Ball ball = (Ball) entity;
                 Body body = new Body();
+                body.setUserData(ball);
+                ball.body = body;
                 BodyFixture f = body.addFixture(Geometry.createCircle(playerSize / 2 * scale), 1, 0, 1);
                 f.setRestitutionVelocity(0);
                 body.translate(toWorldSpaceX(ball.position().x()), ball.position().y());
                 body.setMass(new Mass(new Vector2(), 1, 0));
                 body.setBullet(true);
-                body.setLinearVelocity(toWorldSpaceX(ball.motion().x()), ball.motion().y());
+                body.setLinearVelocity(toWorldSpaceX(toWorldSpaceX(ball.motion().x())), ball.motion().y());
 
                 if (entity instanceof Player) {
+                    ball.ownerId(entity.entityId());
+                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_PLAYER));
                     body.setAtRestDetectionEnabled(false);
+                } else {
+                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_BALL));
                 }
-                body.setUserData(ball);
-                ball.body = body;
                 world.addBody(body);
             }
         }
+    }
+
+    public void kill(Player player) {
+
+    }
+
+    public Ball newBall(double x, double y) {
+        Ball ball = new Ball();
+        ball.position().x(x);
+        ball.position().y(y);
+        ball.color().x(1);
+        ball.color().y(1);
+        ball.color().z(1);
+        newEntity(ball);
+        ball.body = new Body();
+        ball.body.setLinearDamping(0.43);
+        ball.body.setUserData(ball);
+        BodyFixture f = ball.body.addFixture(Geometry.createCircle(playerSize / 2 * scale), 4, 0, 0);
+        f.setFilter(new BallFilter(ball, BallFilter.TYPE_BALL));
+        ball.body.translate(toWorldSpaceX(x), y);
+        ball.body.setBullet(true);
+        ball.body.setMass(new Mass(new Vector2(), 1, 0));
+        physicsEngine.world().addBody(ball.body);
+        return ball;
     }
 
     public float speed() {
@@ -180,5 +235,44 @@ public class Lobby {
 
     public Level level() {
         return level;
+    }
+
+    public float spawnSpeed() {
+        return spawnSpeed;
+    }
+
+    private static class BallFilter implements Filter {
+        private static final int TYPE_PLAYER = 1;
+        private static final int TYPE_BALL = 2;
+        private static final int TYPE_WALL = 3;
+
+        private final Ball ball;
+        private final int type;
+
+        public BallFilter(Ball ball, int type) {
+            this.ball = ball;
+            this.type = type;
+        }
+
+        private static boolean compare(BallFilter f1, BallFilter f2, int type1, int type2) {
+            if (f1.type == type1 && f2.type == type2) return true;
+            if (f2.type == type1 && f1.type == type2) return true;
+            if (f1.ball == null || f2.ball == null) return true;
+            if (f1.ball.ownerId() == f2.ball.ownerId()) return false;
+            return false;
+        }
+
+        @Override
+        public boolean isAllowed(Filter filter) {
+            if (filter instanceof BallFilter) {
+                BallFilter bf = (BallFilter) filter;
+                if ((type == TYPE_PLAYER && bf.type == TYPE_BALL) || (type == TYPE_BALL && bf.type == TYPE_PLAYER)) {
+                    if (bf.ball.ownerId() == ball.ownerId()) return false;
+                    return true;
+                }
+                if (compare(this, bf, TYPE_BALL, TYPE_WALL)) return true;
+            }
+            return false;
+        }
     }
 }

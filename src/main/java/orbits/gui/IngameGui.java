@@ -24,6 +24,9 @@ import orbits.data.Entity;
 import orbits.data.LocalPlayer;
 import orbits.data.Player;
 import orbits.lobby.Lobby;
+import org.joml.Math;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public class IngameGui extends ParentableAbstractGui {
     private final OrbitsGame orbits;
@@ -39,7 +42,7 @@ public class IngameGui extends ParentableAbstractGui {
         this.orbits = orbits;
         lobby = orbits.currentLobby();
         ColorGui background = launcher().guiManager().createGui(ColorGui.class);
-        background.color().set(.5F,.5F,.5F,1);
+        background.color().set(.5F, .5F, .5F, 1);
         background.xProperty().bind(xProperty());
         background.yProperty().bind(yProperty());
         background.widthProperty().bind(widthProperty());
@@ -74,15 +77,31 @@ public class IngameGui extends ParentableAbstractGui {
     protected boolean doHandle(KeybindEvent entry) throws GameException {
         LocalPlayer p = keybindToPlayer.get(entry.keybind().uniqueId());
         if (p != null) {
-            System.out.println("press " + p);
+            if (p.dodgeMultiplier() > 1) return true;
+            p.dodgeMultiplier(lobby, Player.DODGE_SPEED);
+            p.dodgeMultiplierApplied(System.currentTimeMillis());
         }
-        return super.doHandle(entry);
+        return true;
     }
 
     @Override
     protected void doUpdate() throws GameException {
         if (!paused) {
             lobby.physicsEngine().tick();
+            for (Entity entity : lobby.entities().values()) {
+                if (entity instanceof Player) {
+                    Player player = (Player) entity;
+                    long diff = -System.currentTimeMillis() + Player.DODGE_DURATION + player.dodgeMultiplierApplied();
+                    if (diff <= 0 || diff > Player.DODGE_DURATION) {
+                        player.dodgeMultiplierApplied(Long.MAX_VALUE);
+                        player.dodgeMultiplier(lobby, 1);
+                    } else {
+                        float percent = (float) diff / Player.DODGE_DURATION;
+                        percent = (float) java.lang.Math.pow(percent, 0.7);
+                        player.dodgeMultiplier(lobby, (Player.DODGE_SPEED - 1) * percent + 1);
+                    }
+                }
+            }
             redraw();
         }
     }
@@ -120,7 +139,14 @@ public class IngameGui extends ParentableAbstractGui {
                 if (entity instanceof Ball) {
                     Ball ball = (Ball) entity;
                     if (entity.model == null) {
-                        Model model = (ball.ballItem = new GameItem(ballModel, false)).createModel();
+                        Model model = (ball instanceof Player ? (ball.ballItem = new GameItem(ballModel, false) {
+                            @Override
+                            public void applyToTransformationMatrix(Matrix4f transformationMatrix) {
+                                transformationMatrix.rotate(Math.toRadians(-rotation().x.floatValue()), new Vector3f((float) ball.motion().x(), (float) ball.motion().y(), 0).normalize());
+                                transformationMatrix.translate(position().x.floatValue(), position().y.floatValue(), position().z.floatValue());
+                                transformationMatrix.scale(scale().x.floatValue(), scale().y.floatValue(), scale().z.floatValue());
+                            }
+                        }) : (ball.ballItem = new GameItem(ballModel, false))).createModel();
                         if (ball instanceof LocalPlayer) {
                             GlyphStaticModel m = launcher().glyphProvider().loadStaticModel(Component.text(Character.toString(((LocalPlayer) ball).display())), 50);
                             GameItem gi = new GameItem(m);
@@ -139,6 +165,15 @@ public class IngameGui extends ParentableAbstractGui {
                     if (entity instanceof LocalPlayer) {
                         LocalPlayer p = (LocalPlayer) entity;
                         p.textColor.color().set(1 - ball.ballItem.color().x.floatValue(), 1 - ball.ballItem.color().y.floatValue(), 1 - ball.ballItem.color().z.floatValue(), 1);
+                    }
+                    if (ball instanceof Player) {
+                        Player p = (Player) ball;
+                        long diff = p.dodgeMultiplierApplied() + Player.DODGE_DURATION - System.currentTimeMillis();
+                        if (diff > 0 && diff <= Player.DODGE_DURATION) {
+                            p.ballItem.rotation().x.number((float) diff / Player.DODGE_DURATION * 360);
+                        } else {
+                            p.ballItem.rotation().x.number(0);
+                        }
                     }
                     entity.gameItem.position().x.number(ball.position().x() * width());
                     entity.gameItem.position().y.number(ball.position().y() * height());

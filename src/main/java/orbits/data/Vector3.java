@@ -39,6 +39,12 @@ public class Vector3 implements DataSerializable {
         this.z = z;
     }
 
+    public void set(Vector3 other) {
+        x(other.x);
+        y(other.y);
+        z(other.z);
+    }
+
     @Override
     public void write(DataBuffer buffer) {
         buffer.writeFloat(x);
@@ -51,5 +57,10 @@ public class Vector3 implements DataSerializable {
         x = buffer.readFloat();
         y = buffer.readFloat();
         z = buffer.readFloat();
+    }
+
+    @Override
+    public String toString() {
+        return "(" + x + " | " + y + " | " + z + ")";
     }
 }
