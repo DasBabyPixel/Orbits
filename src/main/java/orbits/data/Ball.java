@@ -2,18 +2,25 @@ package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.render.GameItem;
+import orbits.lobby.Lobby;
 
 public class Ball extends Entity {
     private final Position position = new Position(0, 0);
     private final Vector2 motion = new Vector2();
     private final Vector3 color = new Vector3();
+    public GameItem ballItem;
+    public boolean projectile = false;
     private Ball prev;
     private Ball pull;
-    public GameItem ballItem;
     private int ownerId;
 
     public Vector2 motion() {
         return motion;
+    }
+
+    public void updateMotion(Lobby lobby) {
+        motion.x(lobby.toLocalSpaceX(body.getLinearVelocity().x));
+        motion.y(body.getLinearVelocity().y);
     }
 
     public Position position() {

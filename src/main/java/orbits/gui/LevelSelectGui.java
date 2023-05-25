@@ -12,6 +12,7 @@ import orbits.OrbitsGame;
 import orbits.data.level.Level;
 
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public class LevelSelectGui extends ParentableAbstractGui {
     private final ButtonGui exit;
@@ -20,6 +21,10 @@ public class LevelSelectGui extends ParentableAbstractGui {
     private final UUID[] levels;
 
     public LevelSelectGui(OrbitsGame orbits, boolean displayStartPositions) throws GameException {
+        this(orbits, displayStartPositions, l -> true);
+    }
+
+    public LevelSelectGui(OrbitsGame orbits, boolean displayStartPositions, Predicate<Level> filter) throws GameException {
         super(orbits.launcher());
         exit = launcher().guiManager().createGui(ButtonGui.class);
         NumberValue inset = widthProperty().divide(70).min(heightProperty().divide(70));
@@ -51,7 +56,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
         scrollGui.yProperty().bind(yProperty().add(inset));
         scrollGui.widthProperty().bind(widthProperty().subtract(inset.multiply(2)));
         scrollGui.heightProperty().bind(heightProperty().subtract(scrollGui.yProperty()).add(yProperty()).subtract(inset.multiply(2)).subtract(newLevel.heightProperty()));
-        scrollGui.gui().value(new LevelsGui(orbits, displayStartPositions));
+        scrollGui.gui().value(new LevelsGui(orbits, displayStartPositions, filter));
         scrollGui.gui().value().widthProperty().bind(widthProperty().subtract(inset.multiply(2)).subtract(17));
         addGUI(scrollGui);
     }
@@ -70,7 +75,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
 
     private class LevelsGui extends ParentableAbstractGui {
 
-        public LevelsGui(OrbitsGame orbits, boolean displayStartPositions) throws GameException {
+        public LevelsGui(OrbitsGame orbits, boolean displayStartPositions, Predicate<Level> filter) throws GameException {
             super(orbits.launcher());
 
             NumberValue x = xProperty();
@@ -78,6 +83,7 @@ public class LevelSelectGui extends ParentableAbstractGui {
             NumberValue height = NumberValue.withValue(0D);
             for (UUID levelId : levels) {
                 Level level = orbits.levelStorage().findLevel(levelId, -1);
+                if (!filter.test(level)) continue;
                 LevelGui levelGui = new LevelGui(orbits, level, displayStartPositions);
                 ButtonGui button = launcher().guiManager().createGui(ButtonGui.class);
 

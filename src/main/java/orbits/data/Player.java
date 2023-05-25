@@ -4,13 +4,15 @@ import gamelauncher.engine.data.DataBuffer;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import orbits.lobby.Lobby;
-import org.dyn4j.geometry.Vector2;
 
 public class Player extends Ball {
 
-    public static final float DODGE_SPEED = 4;
-    public static final long DODGE_DURATION = 400;
+    public static final float DODGE_SPEED = 2;
+    public static final long DODGE_DURATION = 800;
     private final DoubleList positions = new DoubleArrayList();
+    public Orbit currentOrbit;
+    public boolean orbiting = false;
+    public double orbitingTheta;
     private float dodgeMultiplier = 1;
     private long dodgeMultiplierApplied = Long.MAX_VALUE;
     private Ball trailEnd;
@@ -39,10 +41,15 @@ public class Player extends Ball {
         ball.color().set(color());
     }
 
-    public void removeTrail() {
+    public Ball removeTrail() {
+        Ball b = trailEnd;
+        if (b == null) return null;
         trailEnd = trailEnd.prev();
-        trailEnd.pull().prev(null);
+        b.prev(null);
         trailEnd.pull(null);
+        if (trailEnd == this) trailEnd = null;
+        b.ownerId(0);
+        return b;
     }
 
     @Override
@@ -74,8 +81,7 @@ public class Player extends Ball {
         if (body != null) {
             body.getLinearVelocity().normalize();
             body.getLinearVelocity().multiply(calculateSpeed(lobby));
-            motion().x(lobby.toLocalSpaceX(body.getLinearVelocity().x));
-            motion().y(body.getLinearVelocity().y);
+            updateMotion(lobby);
         }
     }
 

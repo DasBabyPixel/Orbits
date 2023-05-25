@@ -1,5 +1,6 @@
 package orbits.physics;
 
+import gamelauncher.engine.util.GameException;
 import orbits.data.*;
 import orbits.lobby.Lobby;
 import org.dyn4j.dynamics.Body;
@@ -25,7 +26,7 @@ public class PhysicsEngine {
         world.getSettings().setContinuousDetectionMode(ContinuousDetectionMode.NONE);
         world.getSettings().setVelocityConstraintSolverIterations(2);
         world.getSettings().setAtRestDetectionEnabled(true);
-        world.getSettings().setMaximumAtRestLinearVelocity(0.05);
+        world.getSettings().setMaximumAtRestLinearVelocity(0.005);
         world.getSettings().setBaumgarte(Settings.DEFAULT_BAUMGARTE / 20);
         world.getSettings().setLinearTolerance(Settings.DEFAULT_LINEAR_TOLERANCE / 100);
     }
@@ -34,8 +35,15 @@ public class PhysicsEngine {
         return world;
     }
 
-    public void tick() {
+    public void tick() throws GameException {
+        if (lobby.stopTimer() != -1) {
+            lobby.stopTimer(lobby.stopTimer() - 1);
+            if (lobby.stopTimer() == 0) lobby.stop();
+        }
+        if (lobby.stopTimer() == 0) return;
+
         for (Player player : lobby.players()) {
+
             int cur = 0;
             Ball l = player;
             int size = player.positions().size() / 2;
@@ -53,6 +61,11 @@ public class PhysicsEngine {
                     l.body.translate(lobby.toWorldSpaceX(l.position().x()), l.position().y());
                 }
             }
+            if (player.orbiting) {
+                if (player.currentOrbit != null)
+                    player.body.rotate(player.orbitingTheta, lobby.toWorldSpaceX(player.currentOrbit.position().x()), player.currentOrbit.position().y());
+                else System.out.println("bug");
+            }
         }
         for (Entity entity : lobby.entities().values()) {
             if (entity.body != null) {
@@ -68,7 +81,7 @@ public class PhysicsEngine {
                 }
             }
         }
-        if (lobby.entities().size() < 500) {
+        if (lobby.entities().size() < 500) { // Nur neue bälle erschaffen, wenn weniger als 500 existieren
             int count = 0;
             float spawn = lobby.spawnSpeed();
             while (spawn > 0) {
@@ -100,12 +113,25 @@ public class PhysicsEngine {
                 }
             }
         }
-        for (int i = 0; i < remove.size(); i++) {
+        int size = remove.size();
+        for (int i = 0; i < size; i++) {
             world.removeBody(remove.get(i).body);
         }
         remove.clear();
 
         world.step(1);
+        for (Player player : lobby.players()) {
+            long diff = -System.currentTimeMillis() + Player.DODGE_DURATION + player.dodgeMultiplierApplied();
+            if (diff <= 0 || diff > Player.DODGE_DURATION) {
+                player.dodgeMultiplierApplied(Long.MAX_VALUE);
+                player.dodgeMultiplier(lobby, 1);
+            } else {
+                float percent = (float) diff / Player.DODGE_DURATION;
+                percent = (float) java.lang.Math.pow(percent, 0.7);
+                if (percent < 0.01) percent = 0;
+                player.dodgeMultiplier(lobby, (Player.DODGE_SPEED - 1) * percent + 1);
+            }
+        }
     }
 
     public List<Ball> remove() {

@@ -36,7 +36,10 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         singleplayer.xProperty().bind(xProperty().add(widthProperty().divide(1.2)).subtract(singleplayer.widthProperty()));
         singleplayer.yProperty().bind(multiplayer.yProperty().add(singleplayer.heightProperty().multiply(1.5)));
         singleplayer.onButtonPressed(event -> {
-            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits, false);
+            LevelSelectGui levelSelectGui = new LevelSelectGui(orbits, false, l -> {
+                if (l.startPositions().isEmpty()) return false;
+                return true;
+            });
             levelSelectGui.exit().onButtonPressed(e1 -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
             levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartSingleplayerGui(level, orbits)));
             launcher().guiManager().openGui(levelSelectGui);

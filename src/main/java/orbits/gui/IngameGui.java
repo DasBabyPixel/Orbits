@@ -74,12 +74,10 @@ public class IngameGui extends ParentableAbstractGui {
     }
 
     @Override
-    protected boolean doHandle(KeybindEvent entry) throws GameException {
+    protected boolean doHandle(KeybindEvent entry) {
         LocalPlayer p = keybindToPlayer.get(entry.keybind().uniqueId());
         if (p != null) {
-            if (p.dodgeMultiplier() > 1) return true;
-            p.dodgeMultiplier(lobby, Player.DODGE_SPEED);
-            p.dodgeMultiplierApplied(System.currentTimeMillis());
+            lobby.tap(p);
         }
         return true;
     }
@@ -88,20 +86,6 @@ public class IngameGui extends ParentableAbstractGui {
     protected void doUpdate() throws GameException {
         if (!paused) {
             lobby.physicsEngine().tick();
-            for (Entity entity : lobby.entities().values()) {
-                if (entity instanceof Player) {
-                    Player player = (Player) entity;
-                    long diff = -System.currentTimeMillis() + Player.DODGE_DURATION + player.dodgeMultiplierApplied();
-                    if (diff <= 0 || diff > Player.DODGE_DURATION) {
-                        player.dodgeMultiplierApplied(Long.MAX_VALUE);
-                        player.dodgeMultiplier(lobby, 1);
-                    } else {
-                        float percent = (float) diff / Player.DODGE_DURATION;
-                        percent = (float) java.lang.Math.pow(percent, 0.7);
-                        player.dodgeMultiplier(lobby, (Player.DODGE_SPEED - 1) * percent + 1);
-                    }
-                }
-            }
             redraw();
         }
     }
@@ -142,6 +126,10 @@ public class IngameGui extends ParentableAbstractGui {
                         Model model = (ball instanceof Player ? (ball.ballItem = new GameItem(ballModel, false) {
                             @Override
                             public void applyToTransformationMatrix(Matrix4f transformationMatrix) {
+                                if (ball.motion().x() == 0 && ball.motion().y() == 0) {
+                                    super.applyToTransformationMatrix(transformationMatrix);
+                                    return;
+                                }
                                 transformationMatrix.rotate(Math.toRadians(-rotation().x.floatValue()), new Vector3f((float) ball.motion().x(), (float) ball.motion().y(), 0).normalize());
                                 transformationMatrix.translate(position().x.floatValue(), position().y.floatValue(), position().z.floatValue());
                                 transformationMatrix.scale(scale().x.floatValue(), scale().y.floatValue(), scale().z.floatValue());
