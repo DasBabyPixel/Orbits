@@ -8,6 +8,8 @@ import org.dyn4j.dynamics.Settings;
 import org.dyn4j.world.World;
 import org.joml.Math;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class PhysicsEngine {
@@ -15,6 +17,7 @@ public class PhysicsEngine {
     private final World<Body> world = new World<>();
     private final Random r = new Random();
     private final Lobby lobby;
+    private final List<Ball> remove = new ArrayList<>();
 
     public PhysicsEngine(Lobby lobby) {
         this.lobby = lobby;
@@ -97,8 +100,16 @@ public class PhysicsEngine {
                 }
             }
         }
+        for (int i = 0; i < remove.size(); i++) {
+            world.removeBody(remove.get(i).body);
+        }
+        remove.clear();
 
         world.step(1);
+    }
+
+    public List<Ball> remove() {
+        return remove;
     }
 
     private boolean intersect(float px, float py, float qx, float qy, float rx, float ry, float sx, float sy) {

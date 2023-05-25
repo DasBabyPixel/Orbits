@@ -18,6 +18,7 @@ import org.dyn4j.geometry.Vector2;
 import org.dyn4j.world.ContactCollisionData;
 import org.dyn4j.world.World;
 import org.dyn4j.world.listener.ContactListenerAdapter;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Math;
 
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ public class Lobby {
     private int entityIdCounter = 1;
     private Level level;
     private float playerSize = 0.03F;
-    private float spawnSpeed = 40F;
+    private float spawnSpeed = 0.1F;
     private OrbitsGame orbitsGame;
 
     public Lobby() {
@@ -46,6 +47,7 @@ public class Lobby {
     }
 
     public void start(OrbitsGame orbitsGame) {
+        this.orbitsGame = orbitsGame;
         level = availableData.level;
         World<Body> world = physicsEngine.world();
         world.addContactListener(new ContactListenerAdapter<>() {
@@ -71,15 +73,10 @@ public class Lobby {
                 if (ball instanceof Player) return;
                 if (ball.ownerId() != 0) {
                     if (ball.ownerId() == player.ownerId()) return;
-                    kill(player);
+                    kill(player, (Player) entities.get(ball.ownerId()));
                     return;
                 }
-                Ball last = player;
-                while (last.pull() != null) last = last.pull();
-                last.pull(ball);
-
-                ball.ownerId(player.entityId());
-                ball.color().set(player.color());
+                player.addTrail(ball);
             }
 
             private void work(Body body) {
@@ -162,8 +159,30 @@ public class Lobby {
         }
     }
 
-    public void kill(Player player) {
+    public void kill(Player player, @Nullable Player killer) {
+        players.remove(player);
 
+        entities.remove(player.entityId());
+        player.entityId(0);
+        physicsEngine.remove().add(player);
+
+        Ball b = player.pull();
+        if (b != null) b.prev(null);
+        while (b != null) {
+            System.out.println(b);
+            Ball n = b.pull();
+            if (killer == null) {
+                Ball finalB = b;
+                orbitsGame.launcher().frame().renderThread().submit(() -> finalB.model.cleanup());
+                entities.remove(b.entityId());
+                physicsEngine.remove().add(b);
+                if (b.prev() != null) b.prev().pull(null);
+                if (b.pull() != null) b.pull().prev(null);
+            } else {
+                killer.addTrail(b);
+            }
+            b = n;
+        }
     }
 
     public Ball newBall(double x, double y) {

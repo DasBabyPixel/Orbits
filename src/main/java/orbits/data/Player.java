@@ -12,6 +12,7 @@ public class Player extends Ball {
     private final DoubleList positions = new DoubleArrayList();
     private float dodgeMultiplier = 1;
     private long dodgeMultiplierApplied = Long.MAX_VALUE;
+    private Ball trailEnd;
     private int trail;
 
     public DoubleList positions() {
@@ -22,8 +23,25 @@ public class Player extends Ball {
         return trail;
     }
 
-    public void trail(int trail) {
-        this.trail = trail;
+    public void addTrail(Ball ball) {
+        trail++;
+        ball.pull(null);
+        if (trailEnd != null) {
+            trailEnd.pull(ball);
+            ball.prev(trailEnd);
+        } else {
+            pull(ball);
+            ball.prev(this);
+        }
+        trailEnd = ball;
+        ball.ownerId(entityId());
+        ball.color().set(color());
+    }
+
+    public void removeTrail() {
+        trailEnd = trailEnd.prev();
+        trailEnd.pull().prev(null);
+        trailEnd.pull(null);
     }
 
     @Override

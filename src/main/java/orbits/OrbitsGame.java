@@ -40,6 +40,7 @@ public class OrbitsGame extends Game {
     @Override
     protected void close0() throws GameException {
 //        packetHandlers().unregisterHandlers();
+        lobby.stop();
         Threads.await(textureStorage.cleanup());
     }
 

@@ -7,6 +7,7 @@ public class Ball extends Entity {
     private final Position position = new Position(0, 0);
     private final Vector2 motion = new Vector2();
     private final Vector3 color = new Vector3();
+    private Ball prev;
     private Ball pull;
     public GameItem ballItem;
     private int ownerId;
@@ -47,6 +48,14 @@ public class Ball extends Entity {
 
     public void pull(Ball pull) {
         this.pull = pull;
+    }
+
+    public Ball prev() {
+        return prev;
+    }
+
+    public void prev(Ball prev) {
+        this.prev = prev;
     }
 
     public int ownerId() {
