@@ -8,14 +8,16 @@ import orbits.data.level.Level;
 import orbits.data.level.StartPosition;
 import orbits.physics.PhysicsEngine;
 import org.dyn4j.collision.Filter;
+import org.dyn4j.collision.narrowphase.NarrowphasePostProcessor;
+import org.dyn4j.collision.narrowphase.Penetration;
 import org.dyn4j.dynamics.Body;
 import org.dyn4j.dynamics.BodyFixture;
+import org.dyn4j.dynamics.ContinuousDetectionMode;
 import org.dyn4j.dynamics.contact.Contact;
-import org.dyn4j.geometry.Geometry;
-import org.dyn4j.geometry.Mass;
-import org.dyn4j.geometry.MassType;
+import org.dyn4j.geometry.*;
 import org.dyn4j.geometry.Vector2;
 import org.dyn4j.world.ContactCollisionData;
+import org.dyn4j.world.PhysicsBodyBroadphaseCollisionDataFilter;
 import org.dyn4j.world.World;
 import org.dyn4j.world.listener.ContactListenerAdapter;
 import org.joml.Math;
@@ -31,7 +33,7 @@ public class Lobby {
     private final Int2ObjectMap<Entity> entities = new Int2ObjectLinkedOpenHashMap<>();
     private final PhysicsEngine physicsEngine = new PhysicsEngine(this);
     private float scale = 1;
-    private float speed = 0.65F;
+    private float speed = 0.25F;
     private int entityIdCounter = 1;
     private Level level;
     private float playerSize = 0.03F;
@@ -48,6 +50,7 @@ public class Lobby {
     public void start(OrbitsGame orbitsGame) {
         level = availableData.level;
         World<Body> world = physicsEngine.world();
+        if (speed > 0.3) world.getSettings().setContinuousDetectionMode(ContinuousDetectionMode.BULLETS_ONLY);
         world.addContactListener(new ContactListenerAdapter<>() {
             @Override
             public void end(ContactCollisionData<Body> collision, Contact contact) {
@@ -61,10 +64,12 @@ public class Lobby {
             public void begin(ContactCollisionData<Body> collision, Contact contact) {
                 Body b1 = collision.getBody1();
                 Body b2 = collision.getBody2();
-                if (b1.getUserData() instanceof Player && b2.getUserData() instanceof Ball)
+                if (b1.getUserData() instanceof Player && b2.getUserData() instanceof Ball) {
                     begin(((Player) b1.getUserData()), ((Ball) b2.getUserData()));
-                if (b2.getUserData() instanceof Player && b1.getUserData() instanceof Ball)
+                }
+                if (b2.getUserData() instanceof Player && b1.getUserData() instanceof Ball) {
                     begin(((Player) b2.getUserData()), ((Ball) b1.getUserData()));
+                }
             }
 
             private void begin(Player player, Ball ball) {
@@ -257,20 +262,18 @@ public class Lobby {
         private static boolean compare(BallFilter f1, BallFilter f2, int type1, int type2) {
             if (f1.type == type1 && f2.type == type2) return true;
             if (f2.type == type1 && f1.type == type2) return true;
-            if (f1.ball == null || f2.ball == null) return true;
-            if (f1.ball.ownerId() == f2.ball.ownerId()) return false;
             return false;
         }
 
         @Override
         public boolean isAllowed(Filter filter) {
             if (filter instanceof BallFilter) {
-                BallFilter bf = (BallFilter) filter;
-                if ((type == TYPE_PLAYER && bf.type == TYPE_BALL) || (type == TYPE_BALL && bf.type == TYPE_PLAYER)) {
-                    if (bf.ball.ownerId() == ball.ownerId()) return false;
-                    return true;
-                }
-                if (compare(this, bf, TYPE_BALL, TYPE_WALL)) return true;
+                BallFilter f = (BallFilter) filter;
+                if (ball == null || f.ball == null) return true;
+                if ((type == TYPE_PLAYER && f.type == TYPE_BALL) || (type == TYPE_BALL && f.type == TYPE_PLAYER))
+                    if (f.ball.ownerId() == ball.ownerId()) return false;
+                    else return true;
+                if (compare(this, f, TYPE_BALL, TYPE_WALL)) return true;
             }
             return false;
         }
