@@ -1,7 +1,6 @@
 package orbits.gui;
 
 import gamelauncher.engine.gui.ParentableAbstractGui;
-import gamelauncher.engine.gui.guis.TextureGui;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
@@ -12,7 +11,7 @@ public class OrbitsPressToPlay extends ParentableAbstractGui {
     public OrbitsPressToPlay(OrbitsGame orbitsGame) throws GameException {
         super(orbitsGame.launcher());
         this.orbits = orbitsGame;
-        TextureBackgroundGui gui = new TextureBackgroundGui(orbits, "textures/pressToPlay.png");
+        TextureBackgroundGui gui = new TextureBackgroundGui(orbits, "pressToPlay.png");
         gui.widthProperty().bind(widthProperty());
         gui.heightProperty().bind(heightProperty());
         gui.xProperty().bind(xProperty());

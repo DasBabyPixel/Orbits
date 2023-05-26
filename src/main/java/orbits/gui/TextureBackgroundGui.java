@@ -1,9 +1,10 @@
 package orbits.gui;
 
-import gamelauncher.engine.GameLauncher;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.TextureGui;
+import gamelauncher.engine.render.texture.Texture;
 import gamelauncher.engine.util.GameException;
+import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 
 public class TextureBackgroundGui extends ParentableAbstractGui {
@@ -15,8 +16,9 @@ public class TextureBackgroundGui extends ParentableAbstractGui {
         gui.heightProperty().bind(heightProperty());
         gui.xProperty().bind(xProperty());
         gui.yProperty().bind(yProperty());
-
-        gui.texture().uploadAsync(launcher().resourceLoader().resource(orbits.key().withKey(path).toPath(launcher().assets())).newResourceStream()).thenRun(() -> {
+        Texture tex = orbits.textureStorage().texture(path);
+        gui.texture(tex);
+        tex.<CompletableFuture<Void>>storedValue(TextureStorage.UPLOAD_FUTURE).thenRun(() -> {
             try {
                 gui.widthProperty().unbind();
                 gui.heightProperty().unbind();

@@ -12,7 +12,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
     public OrbitsMainScreenGui(OrbitsGame orbits) throws GameException {
         super(orbits.launcher());
 
-        TextureBackgroundGui gui = new TextureBackgroundGui(orbits, "textures/background1.png");
+        TextureBackgroundGui gui = new TextureBackgroundGui(orbits, "background1.png");
         gui.widthProperty().bind(widthProperty());
         gui.heightProperty().bind(heightProperty());
         gui.xProperty().bind(xProperty());
