@@ -24,3 +24,4 @@ rootProject.name = 'Orbits'
 
 // include 'android' // TODO: Actually implement android so it works correctly
 include 'lwjgl'
+include 'downloader'
