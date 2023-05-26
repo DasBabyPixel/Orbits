@@ -1,5 +1,18 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+shadowJar {
+    archiveBaseName.set('orbits')
+    archiveClassifier.set('')
+    archiveVersion.set('')
+}
+
+jar {
+    manifest {
+        attributes.put('Main-Class', 'orbits.downloader.Main')
+    }
 }
 
 dependencies {
