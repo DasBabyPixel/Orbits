@@ -40,7 +40,7 @@ public class Lobby {
     private int entityIdCounter = 1;
     private Level level;
     private float playerSize = 0.03F;
-    private float spawnSpeed = 0.5F*20;
+    private float spawnSpeed = 0.5F * 7;
     private int stopTimer = -1;
     private OrbitsGame orbitsGame;
 
@@ -116,7 +116,7 @@ public class Lobby {
                     return;
                 }
                 if (ball.ownerId() != 0) {
-                    if (ball.ownerId() == player.ownerId()) return;
+                    if (ball.ownerId() == player.entityId()) return;
                     kill(player, (Player) entities.get(ball.ownerId()));
                     return;
                 }
@@ -310,7 +310,7 @@ public class Lobby {
         if (b != null) b.prev(null);
         while (b != null) {
             Ball n = b.pull();
-            if (killer == null) {
+            if (killer == null || killer.entityId() == 0) {
                 Ball finalB = b;
                 orbitsGame.launcher().frame().renderThread().submit(() -> finalB.model.cleanup());
                 entities.remove(b.entityId());
