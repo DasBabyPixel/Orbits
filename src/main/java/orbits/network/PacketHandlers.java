@@ -14,9 +14,7 @@ import java.util.UUID;
  */
 public class PacketHandlers {
     private OrbitsGame orbits;
-    private NetworkClient client;
-
-    private final PacketHandler<LevelChecksumPacket> levelChecksumPacket = packet -> {
+    private final PacketHandler<LevelChecksumPacket> levelChecksumPacket = (connection, packet) -> {
         final UUID levelId = packet.levelId;
         final long checksum = packet.checksum;
         Level level;
@@ -34,7 +32,7 @@ public class PacketHandlers {
             }
         });
     };
-    private final PacketHandler<LevelPacket> levelPacket = packet -> {
+    private final PacketHandler<LevelPacket> levelPacket = (connection, packet) -> {
         Level level = packet.level;
         try {
             orbits.levelStorage().saveLevel(level);
@@ -46,17 +44,18 @@ public class PacketHandlers {
             checkComplete();
         });
     };
-    private final PacketHandler<ReadyToPlayPacket> readyToPlayPacket = packet -> {
+    private final PacketHandler<ReadyToPlayPacket> readyToPlayPacket = (connection, packet) -> {
         orbits.launcher().gameThread().runLater(() -> {
 
         });
     };
-    private final PacketHandler<RequestLevelPacket> requestLevelPacket = packet -> {
+    private final PacketHandler<RequestLevelPacket> requestLevelPacket = (connection, packet) -> {
         orbits.launcher().gameThread().runLater(() -> {
 
         });
     };
-    private final PacketHandler<StartPacket> startPacket = packet -> orbits.launcher().gameThread().runLater(() -> orbits.currentLobby().start(orbits));
+    private final PacketHandler<StartPacket> startPacket = (connection, packet) -> orbits.launcher().gameThread().runLater(() -> orbits.currentLobby().start(orbits));
+    private NetworkClient client;
 
     public PacketHandlers(OrbitsGame orbits) {
         this.orbits = orbits;
@@ -64,34 +63,35 @@ public class PacketHandlers {
     }
 
     public void registerHandlers() {
-        client.getPacketRegistry().register(LevelChecksumPacket.class, LevelChecksumPacket::new);
+        client.packetRegistry().register(LevelChecksumPacket.class, LevelChecksumPacket::new);
         client.addHandler(LevelChecksumPacket.class, levelChecksumPacket);
-        client.getPacketRegistry().register(LevelPacket.class, LevelPacket::new);
+        client.packetRegistry().register(LevelPacket.class, LevelPacket::new);
         client.addHandler(LevelPacket.class, levelPacket);
-        client.getPacketRegistry().register(StartPacket.class, StartPacket::new);
+        client.packetRegistry().register(StartPacket.class, StartPacket::new);
         client.addHandler(StartPacket.class, startPacket);
-        client.getPacketRegistry().register(ReadyToPlayPacket.class, ReadyToPlayPacket::new);
+        client.packetRegistry().register(ReadyToPlayPacket.class, ReadyToPlayPacket::new);
         client.addHandler(ReadyToPlayPacket.class, readyToPlayPacket);
-        client.getPacketRegistry().register(RequestLevelPacket.class, RequestLevelPacket::new);
+        client.packetRegistry().register(RequestLevelPacket.class, RequestLevelPacket::new);
         client.addHandler(RequestLevelPacket.class, requestLevelPacket);
     }
 
     public void unregisterHandlers() throws PacketNotRegisteredException {
-        client.getPacketRegistry().unregister(LevelChecksumPacket.class);
+        client.packetRegistry().unregister(LevelChecksumPacket.class);
         client.removeHandler(LevelChecksumPacket.class, levelChecksumPacket);
-        client.getPacketRegistry().unregister(LevelPacket.class);
+        client.packetRegistry().unregister(LevelPacket.class);
         client.removeHandler(LevelPacket.class, levelPacket);
-        client.getPacketRegistry().unregister(StartPacket.class);
+        client.packetRegistry().unregister(StartPacket.class);
         client.removeHandler(StartPacket.class, startPacket);
-        client.getPacketRegistry().unregister(ReadyToPlayPacket.class);
+        client.packetRegistry().unregister(ReadyToPlayPacket.class);
         client.removeHandler(ReadyToPlayPacket.class, readyToPlayPacket);
-        client.getPacketRegistry().unregister(RequestLevelPacket.class);
+        client.packetRegistry().unregister(RequestLevelPacket.class);
         client.removeHandler(RequestLevelPacket.class, requestLevelPacket);
     }
 
     private void checkComplete() {
         if (orbits.currentLobby().availableData().complete()) {
             // TODO send ReadToPlayPacket
+
         }
     }
 

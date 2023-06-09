@@ -27,6 +27,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         multiplayer.yProperty().bind(yProperty().add(heightProperty().divide(2)).subtract(multiplayer.heightProperty().divide(2)));
         multiplayer.widthProperty().bind(width);
         multiplayer.heightProperty().bind(height);
+        multiplayer.onButtonPressed(event -> launcher().guiManager().openGui(new MultiplayerSelectGui(orbits)));
         addGUI(multiplayer);
 
         ButtonGui singleplayer = launcher().guiManager().createGui(ButtonGui.class);

@@ -34,20 +34,18 @@ public class OrbitsGame extends Game {
 
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
-//        packetHandlers().registerHandlers();
+        packetHandlers().registerHandlers();
     }
 
     @Override
     protected void close0() throws GameException {
-//        packetHandlers().unregisterHandlers();
+        packetHandlers().unregisterHandlers();
         Threads.await(textureStorage.cleanup());
     }
 
     @EventHandler
     private void handle(GuiOpenEvent event) throws GameException {
-        if (event.gui() instanceof MainScreenGui) {
-            event.gui(new OrbitsPressToPlay(this));
-        }
+        if (event.gui() instanceof MainScreenGui) event.gui(new OrbitsPressToPlay(this));
     }
 
     @EventHandler
