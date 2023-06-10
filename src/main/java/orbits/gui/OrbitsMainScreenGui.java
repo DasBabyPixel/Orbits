@@ -42,7 +42,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
                 return true;
             });
             levelSelectGui.exit().onButtonPressed(e1 -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
-            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartSingleplayerGui(level, orbits)));
+            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartIngameGui(level, orbits)));
             launcher().guiManager().openGui(levelSelectGui);
         });
         addGUI(singleplayer);
@@ -89,7 +89,6 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
 //                });
 //        GUIs.add(gui);
     }
-
 //    @Override
 //    protected boolean doHandle(KeybindEvent event) throws GameException {
 //        if (event instanceof MouseButtonKeybindEvent) {

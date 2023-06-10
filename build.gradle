@@ -8,6 +8,8 @@ java.toolchain {
     vendor = JvmVendorSpec.ADOPTIUM
 }
 mkdir "run"
+mkdir "run/2"
+mkdir "run/3"
 
 dependencies {
     api libs.gamelauncherApi

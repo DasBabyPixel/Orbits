@@ -85,6 +85,14 @@ public class Player extends Ball {
         }
     }
 
+    public Ball trailEnd() {
+        return trailEnd;
+    }
+
+    public void trailEnd(Ball trailEnd) {
+        this.trailEnd = trailEnd;
+    }
+
     public float calculateSpeed(Lobby lobby) {
         return lobby.speed() * dodgeMultiplier;
     }

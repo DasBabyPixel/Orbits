@@ -73,6 +73,15 @@ public class PacketHandlers {
         client.addHandler(ReadyToPlayPacket.class, readyToPlayPacket);
         client.packetRegistry().register(RequestLevelPacket.class, RequestLevelPacket::new);
         client.addHandler(RequestLevelPacket.class, requestLevelPacket);
+
+        client.packetRegistry().register(PacketPlayerCreated.class, PacketPlayerCreated::new);
+        client.packetRegistry().register(PacketPlayerDeleted.class, PacketPlayerDeleted::new);
+        client.packetRegistry().register(NewPlayerPacket.class, NewPlayerPacket::new);
+        client.packetRegistry().register(DeletePlayerPacket.class, DeletePlayerPacket::new);
+        client.packetRegistry().register(PacketIngame.class, PacketIngame::new);
+        client.packetRegistry().register(PacketPress.class, PacketPress::new);
+        client.packetRegistry().register(PacketDone.class, PacketDone::new);
+
     }
 
     public void unregisterHandlers() throws PacketNotRegisteredException {
@@ -86,6 +95,15 @@ public class PacketHandlers {
         client.removeHandler(ReadyToPlayPacket.class, readyToPlayPacket);
         client.packetRegistry().unregister(RequestLevelPacket.class);
         client.removeHandler(RequestLevelPacket.class, requestLevelPacket);
+
+        client.packetRegistry().unregister(PacketPlayerCreated.class);
+        client.packetRegistry().unregister(PacketPlayerDeleted.class);
+        client.packetRegistry().unregister(NewPlayerPacket.class);
+        client.packetRegistry().unregister(DeletePlayerPacket.class);
+        client.packetRegistry().unregister(PacketIngame.class);
+        client.packetRegistry().unregister(PacketPress.class);
+        client.packetRegistry().unregister(PacketDone.class);
+
     }
 
     private void checkComplete() {

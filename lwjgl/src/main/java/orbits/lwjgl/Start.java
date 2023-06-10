@@ -38,16 +38,21 @@ public class Start extends LWJGLGameLauncher {
         s.cleanup();
         try {
             PNGDecoder decoder = new PNGDecoder(bin);
-            ByteBuffer pixels64 = memoryManagement().allocDirect(decoder.getWidth() * decoder.getHeight() * DataUtil.BYTES_INT);
-            decoder.decode(pixels64, decoder.getWidth() * DataUtil.BYTES_INT, PNGDecoder.Format.RGBA);
-            pixels64.flip();
             getGLFWThread().submit(() -> {
+                ByteBuffer pixels64 = memoryManagement().allocDirect(decoder.getWidth() * decoder.getHeight() * DataUtil.BYTES_INT);
+                try {
+                    decoder.decode(pixels64, decoder.getWidth() * DataUtil.BYTES_INT, PNGDecoder.Format.RGBA);
+                } catch (IOException e) {
+                    throw new GameException(e);
+                }
+                pixels64.flip();
                 GLFWImage.Buffer buffer = GLFWImage.create(1);
                 buffer.position(0).width(decoder.getWidth()).height(decoder.getHeight()).pixels(pixels64);
                 buffer.position(0);
 
                 GLFW.glfwSetWindowIcon(frame().getGLFWId(), buffer);
                 buffer.free();
+                memoryManagement().free(pixels64);
             });
         } catch (IOException e) {
             throw new GameException(e);

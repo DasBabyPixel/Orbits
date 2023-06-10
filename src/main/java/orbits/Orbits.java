@@ -4,6 +4,7 @@ import gamelauncher.engine.plugin.Plugin;
 import gamelauncher.engine.plugin.Plugin.GamePlugin;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.Key;
+import gamelauncher.engine.util.logging.Logger;
 
 import java.util.Locale;
 
@@ -17,6 +18,7 @@ public class Orbits extends Plugin {
 
     @Override
     public void onEnable() throws GameException {
+        Logger.asyncLogStream().async(false);
         game = new OrbitsGame(this);
         launcher().languageManager().language(Locale.ENGLISH).load(new Key(this, "languages/en.json"));
         launcher().gameRegistry().register(game);

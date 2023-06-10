@@ -1,6 +1,7 @@
 package orbits.lobby;
 
 import gamelauncher.engine.GameLauncher;
+import gamelauncher.engine.network.server.NetworkServer;
 import gamelauncher.engine.util.GameException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -43,6 +44,7 @@ public class Lobby {
     private float spawnSpeed = 0.5F * 7;
     private int stopTimer = -1;
     private OrbitsGame orbitsGame;
+    private NetworkServer server;
 
     public Lobby() {
     }
@@ -307,7 +309,11 @@ public class Lobby {
         }
 
         Ball b = player.pull();
-        if (b != null) b.prev(null);
+        if (b != null) {
+            b.prev(null);
+            player.pull(null);
+            player.trailEnd(null);
+        }
         while (b != null) {
             Ball n = b.pull();
             if (killer == null || killer.entityId() == 0) {
@@ -355,6 +361,14 @@ public class Lobby {
     public Vector2 toWorldSpace(Vector2 vector) {
         vector.x = toWorldSpaceX(vector.x);
         return vector;
+    }
+
+    public NetworkServer server() {
+        return server;
+    }
+
+    public void server(NetworkServer server) {
+        this.server = server;
     }
 
     public double toWorldSpaceX(double worldSpace) {
