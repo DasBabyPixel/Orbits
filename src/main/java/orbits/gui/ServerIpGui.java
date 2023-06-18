@@ -5,6 +5,7 @@ import gamelauncher.engine.gui.guis.TextGui;
 import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.network.NetworkAddress;
 import gamelauncher.engine.network.packet.Packet;
+import gamelauncher.engine.settings.SettingSection;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.keybind.KeybindEvent;
@@ -15,6 +16,7 @@ import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.network.AbstractServerWrapperConnection;
 import orbits.network.ServerUtils;
+import orbits.settings.OrbitsSettingSection;
 
 import java.net.UnknownHostException;
 import java.util.Locale;
@@ -37,7 +39,8 @@ public class ServerIpGui extends ParentableAbstractGui {
     }
 
     private void connect() throws UnknownHostException, GameException {
-        Connection connection = launcher().networkClient().connect(NetworkAddress.byName("localhost", 19452));
+        SettingSection section = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS);
+        Connection connection = launcher().networkClient().connect(NetworkAddress.byName(section.<String>getSetting(OrbitsSettingSection.SERVER_HOST).getValue(), section.<Integer>getSetting(OrbitsSettingSection.SERVER_PORT).getValue()));
         Connection.State state = connection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
         if (state == Connection.State.CONNECTED) {
             Threads.await(connection.sendPacketAsync(new PacketConnectToServer(ip)));
