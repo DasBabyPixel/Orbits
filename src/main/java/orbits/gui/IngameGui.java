@@ -12,6 +12,7 @@ import gamelauncher.engine.render.model.GlyphStaticModel;
 import gamelauncher.engine.render.model.Model;
 import gamelauncher.engine.render.texture.Texture;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
@@ -103,7 +104,7 @@ public class IngameGui extends ParentableAbstractGui {
         if (lobby.serverConnection() != null) {
             lobby.serverConnection().removeHandler(PacketPress.class, press);
             ((AbstractServerWrapperConnection) lobby.serverConnection()).connection().removeHandler(PacketClientDisconnected.class, clientDisconnected);
-            lobby.serverConnection().cleanup();
+            Threads.await(lobby.serverConnection().cleanup());
         }
         super.onClose();
     }
