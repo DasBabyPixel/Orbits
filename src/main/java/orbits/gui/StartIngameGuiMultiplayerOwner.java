@@ -66,18 +66,17 @@ public class StartIngameGuiMultiplayerOwner extends StartIngameGui {
             rawConnection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
             rawConnection.sendPacket(new PacketRequestServerId());
             String serverId = Threads.await(f);
-            System.out.println("loading");
             idText.text().value(Component.text(serverId));
 
             connection = new AbstractServerWrapperConnection(rawConnection) {
                 @Override
                 public void sendPacket(Packet packet) {
-                    ServerUtils.serverSendPacketAll(encoder, serverId, connection, packet);
+                    ServerUtils.serverSendPacketAll(encoder, serverId, rawConnection, packet);
                 }
 
                 @Override
                 public CompletableFuture<Void> sendPacketAsync(Packet packet) {
-                    return ServerUtils.serverSendPacketAllAsync(encoder, serverId, connection, packet);
+                    return ServerUtils.serverSendPacketAllAsync(encoder, serverId, rawConnection, packet);
                 }
             };
 
