@@ -14,7 +14,6 @@ import gamelauncher.netty.standalone.PacketPayloadInC2S;
 import gamelauncher.netty.standalone.PacketPayloadInS2C;
 import java8.util.concurrent.CompletableFuture;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +30,6 @@ public abstract class AbstractServerWrapperConnection implements Connection {
         this.connection = connection;
         this.encoder = new PacketEncoder(connection.networkClient().packetRegistry());
         connection.addHandler(PacketPayloadInS2C.class, (connection1, packet) -> {
-            System.out.println(packet);
             Packet p = ServerUtils.receivePayload(encoder, connection1, packet.data);
             Collection<HandlerEntry<?>> cc = handlers.get(p.getClass());
             if (cc != null) {
@@ -41,8 +39,6 @@ public abstract class AbstractServerWrapperConnection implements Connection {
             }
         });
         connection.addHandler(PacketPayloadInC2S.class, (connection1, packet) -> {
-            System.out.println(packet);
-            System.out.println(Arrays.toString(packet.data));
             Packet p = ServerUtils.receivePayload(encoder, connection1, packet.data);
             Collection<HandlerEntry<?>> cc = handlers.get(p.getClass());
             if (cc != null) {
@@ -138,6 +134,10 @@ public abstract class AbstractServerWrapperConnection implements Connection {
     @Override
     public CompletableFuture<Void> cleanupFuture() {
         return connection.cleanupFuture();
+    }
+
+    public Connection connection() {
+        return connection;
     }
 
     static class HandlerEntry<T extends Packet> {

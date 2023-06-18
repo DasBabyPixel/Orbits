@@ -21,7 +21,6 @@ public class Orbits extends Plugin {
     public void onEnable() throws GameException {
         Logger.asyncLogStream().async(false);
         new OrbitsSettingSectionInsertion(launcher().eventManager()).register(launcher());
-        launcher().saveSettings();
         game = new OrbitsGame(this);
         launcher().languageManager().language(Locale.ENGLISH).load(new Key(this, "languages/en.json"));
         launcher().gameRegistry().register(game);
