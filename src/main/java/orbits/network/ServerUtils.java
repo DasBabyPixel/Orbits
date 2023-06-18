@@ -45,6 +45,7 @@ public class ServerUtils {
 
     public static Packet receivePayload(PacketEncoder encoder, Connection connection, byte[] payload) {
         DataMemory dm = new DataMemory(payload);
+        System.out.println(Arrays.toString(payload));
         DataBuffer db = new DataBuffer(dm);
         db.writerIndex(payload.length);
         try {
