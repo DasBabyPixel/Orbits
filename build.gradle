@@ -12,6 +12,7 @@ mkdir "run/2"
 mkdir "run/3"
 
 dependencies {
+    api libs.gamelauncherNetty
     api libs.gamelauncherApi
     api libs.gamelauncherGles
     api libs.dyn4j

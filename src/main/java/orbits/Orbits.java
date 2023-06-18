@@ -6,6 +6,11 @@ import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.Key;
 import gamelauncher.engine.util.logging.Logger;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Locale;
 
 @GamePlugin
@@ -23,6 +28,16 @@ public class Orbits extends Plugin {
         launcher().languageManager().language(Locale.ENGLISH).load(new Key(this, "languages/en.json"));
         launcher().gameRegistry().register(game);
         launcher().eventManager().registerListener(game);
+        try {
+            NetworkInterface.networkInterfaces().forEach(i->{
+                System.out.println(i + " " + Collections.list(i.getInetAddresses()));
+            });
+            for (InetAddress localhost : InetAddress.getAllByName("localhost")) {
+                System.out.println(localhost);
+            }
+        } catch (UnknownHostException | SocketException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

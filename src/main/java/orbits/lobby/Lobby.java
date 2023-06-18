@@ -1,7 +1,7 @@
 package orbits.lobby;
 
 import gamelauncher.engine.GameLauncher;
-import gamelauncher.engine.network.server.NetworkServer;
+import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.util.GameException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -44,7 +44,7 @@ public class Lobby {
     private float spawnSpeed = 0.5F * 7;
     private int stopTimer = -1;
     private OrbitsGame orbitsGame;
-    private NetworkServer server;
+    private Connection serverConnection;
 
     public Lobby() {
     }
@@ -363,14 +363,6 @@ public class Lobby {
         return vector;
     }
 
-    public NetworkServer server() {
-        return server;
-    }
-
-    public void server(NetworkServer server) {
-        this.server = server;
-    }
-
     public double toWorldSpaceX(double worldSpace) {
         return worldSpace * level.aspectRatioWpH();
     }
@@ -410,6 +402,14 @@ public class Lobby {
 
     public float spawnSpeed() {
         return spawnSpeed;
+    }
+
+    public Connection serverConnection() {
+        return serverConnection;
+    }
+
+    public void serverConnection(Connection serverConnection) {
+        this.serverConnection = serverConnection;
     }
 
     private static class BallFilter implements Filter {

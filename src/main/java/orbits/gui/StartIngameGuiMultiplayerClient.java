@@ -2,10 +2,8 @@ package orbits.gui;
 
 import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.util.GameException;
-import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import orbits.OrbitsGame;
-import orbits.data.level.Level;
 import orbits.network.*;
 
 public class StartIngameGuiMultiplayerClient extends StartIngameGui {
@@ -65,6 +63,5 @@ public class StartIngameGuiMultiplayerClient extends StartIngameGui {
 
     @Override
     public void onClose() throws GameException {
-        if (!connection.cleanedUp()) Threads.await(connection.cleanup());
     }
 }

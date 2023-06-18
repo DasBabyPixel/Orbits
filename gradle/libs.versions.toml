@@ -7,6 +7,7 @@ dyn4j = "5.0.1"
 
 [libraries]
 gamelauncherApi = { group = "de.dasbabypixel.gamelauncher", name = "api", version.ref = "gamelauncher" }
+gamelauncherNetty = { group = "de.dasbabypixel.gamelauncher", name = "netty", version.ref = "gamelauncher" }
 gamelauncherGles = { group = "de.dasbabypixel.gamelauncher", name = "gles", version.ref = "gamelauncher" }
 gamelauncherLwjgl = { group = "de.dasbabypixel.gamelauncher", name = "lwjgl", version.ref = "gamelauncher" }
 gamelauncherAndroid = { group = "de.dasbabypixel.gamelauncher", name = "android", version.ref = "gamelauncher" }

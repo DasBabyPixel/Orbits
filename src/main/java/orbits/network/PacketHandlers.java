@@ -4,6 +4,7 @@ import gamelauncher.engine.network.NetworkClient;
 import gamelauncher.engine.network.packet.PacketHandler;
 import gamelauncher.engine.network.packet.PacketNotRegisteredException;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.netty.standalone.StandaloneServer;
 import orbits.OrbitsGame;
 import orbits.data.level.Level;
 
@@ -81,6 +82,8 @@ public class PacketHandlers {
         client.packetRegistry().register(PacketIngame.class, PacketIngame::new);
         client.packetRegistry().register(PacketPress.class, PacketPress::new);
         client.packetRegistry().register(PacketDone.class, PacketDone::new);
+
+        StandaloneServer.registerPackets(client.packetRegistry());
 
     }
 

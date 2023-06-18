@@ -40,14 +40,14 @@ public class IngameGui extends ParentableAbstractGui {
     private final EntityRenderer entityRenderer;
     private final Int2ObjectMap<LocalPlayer> keybindToPlayer = new Int2ObjectOpenHashMap<>();
     private final Texture ballTexture;
-    private boolean paused = false;
     private final PacketHandler<PacketPress> press = (connection, packet) -> launcher().gameThread().runLater(() -> press(connection, packet));
+    private boolean paused = false;
 
     public IngameGui(OrbitsGame orbits) throws GameException {
         super(orbits.launcher());
         this.orbits = orbits;
         lobby = orbits.currentLobby();
-        if (lobby.server() != null) launcher().networkClient().addHandler(PacketPress.class, press);
+        if (lobby.serverConnection() != null) lobby.serverConnection().addHandler(PacketPress.class, press);
         ColorGui background = launcher().guiManager().createGui(ColorGui.class);
         background.color().set(.5F, .5F, .5F, 1);
         background.xProperty().bind(xProperty());
@@ -82,9 +82,9 @@ public class IngameGui extends ParentableAbstractGui {
 
     @Override
     public void onClose() throws GameException {
-        if (lobby.server() != null) {
-            launcher().networkClient().removeHandler(PacketPress.class, press);
-            lobby.server().cleanup();
+        if (lobby.serverConnection() != null) {
+            lobby.serverConnection().removeHandler(PacketPress.class, press);
+            lobby.serverConnection().cleanup();
         }
         super.onClose();
     }
