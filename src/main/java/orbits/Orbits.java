@@ -1,5 +1,7 @@
 package orbits;
 
+import gamelauncher.engine.gui.GuiDistribution;
+import gamelauncher.engine.gui.guis.TextGui;
 import gamelauncher.engine.plugin.Plugin;
 import gamelauncher.engine.plugin.Plugin.GamePlugin;
 import gamelauncher.engine.util.GameException;
@@ -19,6 +21,26 @@ public class Orbits extends Plugin {
 
     @Override
     public void onEnable() throws GameException {
+        launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, TextGui.class, () -> {
+            return new TextGui.Simple(launcher()) {
+//                @Override
+//                protected void doInit() throws GameException {
+//                }
+//
+//                @Override
+//                protected void preRender(float mouseX, float mouseY, float partialTick) throws GameException {
+//                }
+//
+//                @Override
+//                protected boolean doRender(float mouseX, float mouseY, float partialTick) throws GameException {
+//                    return true;
+//                }
+//
+//                @Override
+//                protected void doCleanup() throws GameException {
+//                }
+            };
+        });
         Logger.asyncLogStream().async(false);
         new OrbitsSettingSectionInsertion(launcher().eventManager()).register(launcher());
         game = new OrbitsGame(this);

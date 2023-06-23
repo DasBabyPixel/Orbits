@@ -7,6 +7,7 @@ import gamelauncher.engine.util.Key;
 import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,13 +33,32 @@ public class TextureStorage extends AbstractGameResource {
     public Texture texture(String name) {
         return textures.computeIfAbsent(name, s -> {
             try {
+                Path path = orbitsGame.key().withKey("textures/" + s).toPath(orbitsGame.launcher().assets());
                 Texture texture = orbitsGame.launcher().textureManager().createTexture();
-                CompletableFuture<Void> uploadFuture = texture.uploadAsync(orbitsGame.launcher().resourceLoader().resource(orbitsGame.key().withKey("textures/" + s).toPath(orbitsGame.launcher().assets())).newResourceStream()).thenRun(() -> orbitsGame.launcher().guiManager().redrawAll());
+                CompletableFuture<Void> uploadFuture = upload(texture, path);
                 texture.storeValue(UPLOAD_FUTURE, uploadFuture);
                 return texture;
             } catch (GameException e) {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private CompletableFuture<Void> upload(Texture texture, Path path) throws GameException {
+        CompletableFuture<Void> f = upload0(texture, path);
+//        f.thenRunAsync(() -> {
+//            System.out.println("upload done");
+//            Threads.sleep(100);
+//            try {
+//                upload(texture, path);
+//            } catch (GameException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+        return f;
+    }
+
+    private CompletableFuture<Void> upload0(Texture texture, Path path) throws GameException {
+        return texture.uploadAsync(orbitsGame.launcher().resourceLoader().resource(path).newResourceStream()).thenRun(() -> orbitsGame.launcher().guiManager().redrawAll());
     }
 }
