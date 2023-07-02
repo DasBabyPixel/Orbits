@@ -36,7 +36,6 @@ public class OrbitsGame extends Game {
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
         packetHandlers().registerHandlers();
-        launcher().frame().renderMode(RenderMode.CONTINUOUSLY);
     }
 
     @Override

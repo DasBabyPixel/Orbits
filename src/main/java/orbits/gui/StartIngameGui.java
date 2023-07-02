@@ -63,21 +63,24 @@ public class StartIngameGui extends ParentableAbstractGui {
 
     protected void start() throws GameException {
         if (lobby.availableData().level.startPositions().isEmpty()) return;
-        if (players.size() >= 2) {
-            Lobby l = orbits.currentLobby();
-            for (int i = 0; i < players.size(); i++) {
-                int id = players.getInt(i);
-                PlayerGui pg = playerGuis.get(i);
-                LocalPlayer player = new LocalPlayer(id, pg.display.charAt(0));
-                player.color().x(pg.color.x);
-                player.color().y(pg.color.y);
-                player.color().z(pg.color.z);
-                l.players().add(player);
-            }
-            preStart();
-            l.start(orbits);
-            launcher().guiManager().openGui(startCreateGui());
+        if (players.size() < 2) return;
+        forceStart();
+    }
+
+    protected void forceStart() throws GameException {
+        Lobby l = orbits.currentLobby();
+        for (int i = 0; i < players.size(); i++) {
+            int id = players.getInt(i);
+            PlayerGui pg = playerGuis.get(i);
+            LocalPlayer player = new LocalPlayer(id, pg.display.charAt(0));
+            player.color().x(pg.color.x);
+            player.color().y(pg.color.y);
+            player.color().z(pg.color.z);
+            l.players().add(player);
         }
+        preStart();
+        l.start(orbits);
+        launcher().guiManager().openGui(startCreateGui());
     }
 
     protected void preStart() {

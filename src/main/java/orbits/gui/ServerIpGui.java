@@ -18,6 +18,8 @@ import orbits.network.AbstractServerWrapperConnection;
 import orbits.network.ServerUtils;
 import orbits.settings.OrbitsSettingSection;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +40,9 @@ public class ServerIpGui extends ParentableAbstractGui {
         addGUI(textGui);
     }
 
-    private void connect() throws UnknownHostException, GameException {
+    private void connect() throws UnknownHostException, GameException, URISyntaxException {
         SettingSection section = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS);
-        Connection connection = launcher().networkClient().connect(NetworkAddress.byName(section.<String>getSetting(OrbitsSettingSection.SERVER_HOST).getValue(), section.<Integer>getSetting(OrbitsSettingSection.SERVER_PORT).getValue()));
+        Connection connection = launcher().networkClient().connect(new URI(section.<String>getSetting(OrbitsSettingSection.SERVER_URL).getValue()));
         Connection.State state = connection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
         if (state == Connection.State.CONNECTED) {
             Threads.await(connection.sendPacketAsync(new PacketConnectToServer(ip)));
@@ -75,8 +77,8 @@ public class ServerIpGui extends ParentableAbstractGui {
                 if (ip.length() != 5) return true;
                 try {
                     connect();
-                } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
+                } catch (UnknownHostException | URISyntaxException e) {
+                    throw GameException.wrap(e);
                 }
                 return true;
             } else {

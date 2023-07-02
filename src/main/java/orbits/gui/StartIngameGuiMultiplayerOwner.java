@@ -21,9 +21,13 @@ import orbits.data.level.Level;
 import orbits.network.*;
 import orbits.settings.OrbitsSettingSection;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class StartIngameGuiMultiplayerOwner extends StartIngameGui {
     public static final Key mapped_ids = new Key("mapped_ids");
@@ -75,41 +79,61 @@ public class StartIngameGuiMultiplayerOwner extends StartIngameGui {
     protected void doInit() {
         try {
             SettingSection section = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS);
-            rawConnection = launcher().networkClient().connect(NetworkAddress.byName(section.<String>getSetting(OrbitsSettingSection.SERVER_HOST).getValue(), section.<Integer>getSetting(OrbitsSettingSection.SERVER_PORT).getValue()));
+            rawConnection = launcher().networkClient().connect(new URI(section.<String>getSetting(OrbitsSettingSection.SERVER_URL).getValue()));
             CompletableFuture<String> f = new CompletableFuture<>();
             rawConnection.addHandler(PacketRequestServerId.Response.class, (connection, packet) -> f.complete(packet.id));
             rawConnection.addHandler(PacketClientDisconnected.class, clientDisconnected);
             rawConnection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
             rawConnection.sendPacket(new PacketRequestServerId());
-            String serverId = Threads.await(f);
+            String serverId;
+            try {
+                serverId = f.get(5, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
             idText.text().value(Component.text(serverId));
 
+            String finalServerId = serverId;
             connection = new AbstractServerWrapperConnection(rawConnection) {
                 @Override
                 public void sendPacket(Packet packet) {
-                    ServerUtils.serverSendPacketAll(encoder, serverId, rawConnection, packet);
+                    ServerUtils.serverSendPacketAll(encoder, finalServerId, rawConnection, packet);
                 }
 
                 @Override
                 public CompletableFuture<Void> sendPacketAsync(Packet packet) {
-                    return ServerUtils.serverSendPacketAllAsync(encoder, serverId, rawConnection, packet);
+                    return ServerUtils.serverSendPacketAllAsync(encoder, finalServerId, rawConnection, packet);
                 }
             };
 
             connection.addHandler(NewPlayerPacket.class, h1);
             connection.addHandler(DeletePlayerPacket.class, h2);
+            connection.cleanupFuture().thenRun(() -> {
+                if (!initialized()) return;
+                try {
+                    launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits));
+                } catch (GameException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             lobby.serverConnection(connection);
-        } catch (UnknownHostException | GameException e) {
+        } catch (GameException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
+    protected IngameGui startCreateGui() throws GameException {
+        return new IngameGuiOwner(orbits);
+    }
+
+    @Override
     protected void preStart() {
-        connection.sendPacket(new PacketIngame());
+        connection.sendPacket(new PacketIngame(lobby.availableData().level));
         connection.removeHandler(NewPlayerPacket.class, h1);
         connection.removeHandler(DeletePlayerPacket.class, h2);
         connection = null;
+        rawConnection = null;
     }
 
     @Override
@@ -120,6 +144,7 @@ public class StartIngameGuiMultiplayerOwner extends StartIngameGui {
         if (connection != null) {
             connection.removeHandler(NewPlayerPacket.class, h1);
             connection.removeHandler(DeletePlayerPacket.class, h2);
+            connection.cleanup();
         }
     }
 }

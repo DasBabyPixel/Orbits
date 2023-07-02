@@ -3,8 +3,6 @@ package orbits.gui;
 import de.dasbabypixel.api.property.NumberValue;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ColorGui;
-import gamelauncher.engine.network.Connection;
-import gamelauncher.engine.network.packet.PacketHandler;
 import gamelauncher.engine.render.ContextProvider;
 import gamelauncher.engine.render.DrawContext;
 import gamelauncher.engine.render.GameItem;
@@ -12,61 +10,37 @@ import gamelauncher.engine.render.model.GlyphStaticModel;
 import gamelauncher.engine.render.model.Model;
 import gamelauncher.engine.render.texture.Texture;
 import gamelauncher.engine.util.GameException;
-import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import gamelauncher.gles.model.GLESCombinedModelsModel;
 import gamelauncher.gles.model.Texture2DModel;
 import gamelauncher.gles.texture.GLESTexture;
-import gamelauncher.netty.standalone.PacketClientDisconnected;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import orbits.OrbitsGame;
 import orbits.data.Ball;
 import orbits.data.Entity;
 import orbits.data.LocalPlayer;
 import orbits.data.Player;
 import orbits.lobby.Lobby;
-import orbits.network.AbstractServerWrapperConnection;
-import orbits.network.PacketPress;
 import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class IngameGui extends ParentableAbstractGui {
     private final OrbitsGame orbits;
-    private final Lobby lobby;
+    protected final Lobby lobby;
     private final LevelGui levelGui;
     private final EntityRenderer entityRenderer;
-    private final Int2ObjectMap<LocalPlayer> keybindToPlayer = new Int2ObjectOpenHashMap<>();
+    protected final Int2ObjectMap<LocalPlayer> keybindToPlayer = new Int2ObjectOpenHashMap<>();
     private final Texture ballTexture;
-    private final PacketHandler<PacketPress> press = (connection, packet) -> launcher().gameThread().runLater(() -> press(connection, packet));
-    private final PacketHandler<PacketClientDisconnected> clientDisconnected;
     private boolean paused = false;
 
     public IngameGui(OrbitsGame orbits) throws GameException {
         super(orbits.launcher());
         this.orbits = orbits;
         lobby = orbits.currentLobby();
-        clientDisconnected = (connection, packet) -> {
-            Int2IntMap map = connection.storedValue(StartIngameGuiMultiplayerOwner.mapped_ids);
-            if (map == null) return;
-            IntIterator it = map.values().intIterator();
-            while (it.hasNext()) {
-                int id = it.nextInt();
-                it.remove();
-                launcher().gameThread().runLater(() -> {
-                    Player p = keybindToPlayer.get(id);
-                    if (p != null) {
-                        lobby.kill(p, null);
-                    }
-                });
-            }
-        };
-        if (lobby.serverConnection() != null) {
-            lobby.serverConnection().addHandler(PacketPress.class, press);
-            ((AbstractServerWrapperConnection) lobby.serverConnection()).connection().addHandler(PacketClientDisconnected.class, clientDisconnected);
-        }
         ColorGui background = launcher().guiManager().createGui(ColorGui.class);
         background.color().set(.5F, .5F, .5F, 1);
         background.xProperty().bind(xProperty());
@@ -97,24 +71,6 @@ public class IngameGui extends ParentableAbstractGui {
             if (event.character() != ' ') return;
             paused = !paused;
         });
-    }
-
-    @Override
-    public void onClose() throws GameException {
-        if (lobby.serverConnection() != null) {
-            lobby.serverConnection().removeHandler(PacketPress.class, press);
-            ((AbstractServerWrapperConnection) lobby.serverConnection()).connection().removeHandler(PacketClientDisconnected.class, clientDisconnected);
-            Threads.await(lobby.serverConnection().cleanup());
-        }
-        super.onClose();
-    }
-
-    private void press(Connection connection, PacketPress packet) {
-        Int2IntMap map = connection.storedValue(StartIngameGuiMultiplayerOwner.mapped_ids, Int2IntOpenHashMap::new);
-        if (!map.containsKey(packet.id)) return;
-        int oid = map.get(packet.id);
-        Player p = keybindToPlayer.get(oid);
-        if (p != null) lobby.tap(p);
     }
 
     @Override

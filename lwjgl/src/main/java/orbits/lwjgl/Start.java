@@ -46,11 +46,12 @@ public class Start extends LWJGLGameLauncher {
                     throw new GameException(e);
                 }
                 pixels64.flip();
-                GLFWImage.Buffer buffer = GLFWImage.create(1);
+                GLFWImage.Buffer buffer = GLFWImage.malloc(1);
                 buffer.position(0).width(decoder.getWidth()).height(decoder.getHeight()).pixels(pixels64);
                 buffer.position(0);
 
                 GLFW.glfwSetWindowIcon(frame().getGLFWId(), buffer);
+                buffer.free();
                 memoryManagement().free(pixels64);
             });
         } catch (IOException e) {
