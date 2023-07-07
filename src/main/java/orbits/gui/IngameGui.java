@@ -29,18 +29,19 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class IngameGui extends ParentableAbstractGui {
-    private final OrbitsGame orbits;
+    protected final OrbitsGame orbits;
     protected final Lobby lobby;
-    private final LevelGui levelGui;
-    private final EntityRenderer entityRenderer;
+    protected final LevelGui levelGui;
+    protected final EntityRenderer entityRenderer;
     protected final Int2ObjectMap<LocalPlayer> keybindToPlayer = new Int2ObjectOpenHashMap<>();
-    private final Texture ballTexture;
-    private boolean paused = false;
+    protected final Texture ballTexture;
+    protected boolean paused = false;
 
     public IngameGui(OrbitsGame orbits) throws GameException {
         super(orbits.launcher());
         this.orbits = orbits;
         lobby = orbits.currentLobby();
+
         ColorGui background = launcher().guiManager().createGui(ColorGui.class);
         background.color().set(.5F, .5F, .5F, 1);
         background.xProperty().bind(xProperty());

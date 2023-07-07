@@ -1,17 +1,18 @@
 package orbits.gui;
 
 import gamelauncher.engine.gui.ParentableAbstractGui;
+import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.TextGui;
 import gamelauncher.engine.network.Connection;
-import gamelauncher.engine.network.NetworkAddress;
 import gamelauncher.engine.network.packet.Packet;
+import gamelauncher.engine.network.packet.PacketHandler;
 import gamelauncher.engine.settings.SettingSection;
 import gamelauncher.engine.util.GameException;
-import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
+import gamelauncher.engine.util.logging.Logger;
 import gamelauncher.engine.util.text.Component;
-import gamelauncher.netty.standalone.PacketConnectToServer;
+import gamelauncher.netty.standalone.packet.c2s.PacketConnectToServer;
 import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.network.AbstractServerWrapperConnection;
@@ -22,9 +23,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class ServerIpGui extends ParentableAbstractGui {
+    private static final Logger logger = Logger.logger();
     private final OrbitsGame orbits;
     private String ip = "?????";
     private TextGui textGui;
@@ -38,6 +42,14 @@ public class ServerIpGui extends ParentableAbstractGui {
         textGui.xProperty().bind(xProperty().add(widthProperty().subtract(textGui.widthProperty()).divide(2)));
         textGui.yProperty().bind(yProperty().add(heightProperty().subtract(textGui.heightProperty()).divide(2)));
         addGUI(textGui);
+        ButtonGui back = launcher().guiManager().createGui(ButtonGui.class);
+        back.xProperty().bind(xProperty().add(10));
+        back.yProperty().bind(yProperty().add(heightProperty()).subtract(10).subtract(back.heightProperty()));
+        back.heightProperty().bind(heightProperty().divide(14));
+        back.widthProperty().bind(back.heightProperty().multiply(3));
+        ((ButtonGui.Simple.TextForeground) back.foreground().value()).textGui().text().value(Component.text("Back"));
+        back.onButtonPressed(event -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
+        addGUI(back);
     }
 
     private void connect() throws UnknownHostException, GameException, URISyntaxException {
@@ -45,11 +57,28 @@ public class ServerIpGui extends ParentableAbstractGui {
         Connection connection = launcher().networkClient().connect(new URI(section.<String>getSetting(OrbitsSettingSection.SERVER_URL).getValue()));
         Connection.State state = connection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
         if (state == Connection.State.CONNECTED) {
-            Threads.await(connection.sendPacketAsync(new PacketConnectToServer(ip)));
-            Threads.sleep(500);
-            if (connection.cleanedUp()) return;
+            CompletableFuture<Integer> connectFuture = new CompletableFuture<>();
+            PacketHandler<PacketConnectToServer.Response> responseHandler = (con, packet) -> connectFuture.complete(packet.code);
+            connection.addHandler(PacketConnectToServer.Response.class, responseHandler);
+            connection.sendPacket(new PacketConnectToServer(ip));
+            try {
+                int code = connectFuture.get(5, TimeUnit.SECONDS);
+                if (code != 1) {
+                    connection.cleanup();
+                    logger.error("Failed to connect: " + code);
+                    return;
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                logger.error(e);
+                connection.cleanup();
+                return;
+            }
 
-            launcher().guiManager().openGui(new StartIngameGuiMultiplayerClient(orbits, new AbstractServerWrapperConnection(connection) {
+            launcher().guiManager().openGui(new StartIngameGui(orbits, new AbstractServerWrapperConnection(connection) {
+                {
+                    loadClient();
+                }
+
                 @Override
                 public void sendPacket(Packet packet) {
                     ServerUtils.clientSendPacket(encoder, connection, packet);
@@ -59,7 +88,7 @@ public class ServerIpGui extends ParentableAbstractGui {
                 public CompletableFuture<Void> sendPacketAsync(Packet packet) {
                     return ServerUtils.clientSendPacketAsync(encoder, connection, packet);
                 }
-            }));
+            }, null));
         } else {
             connection.cleanup();
             launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits));

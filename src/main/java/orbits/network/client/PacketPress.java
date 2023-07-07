@@ -1,16 +1,16 @@
-package orbits.network;
+package orbits.network.client;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;
 
-public class PacketPlayerDeleted extends Packet {
+public class PacketPress extends Packet {
     public int id;
 
-    public PacketPlayerDeleted() {
-        super("player_deleted");
+    public PacketPress() {
+        super("press");
     }
 
-    public PacketPlayerDeleted(int id) {
+    public PacketPress(int id) {
         this();
         this.id = id;
     }
@@ -22,11 +22,6 @@ public class PacketPlayerDeleted extends Packet {
 
     @Override
     protected void read0(DataBuffer buffer) {
-        this.id = buffer.readInt();
-    }
-
-    @Override
-    public String toString() {
-        return "PacketPlayerDeleted{" + "id=" + id + '}';
+        id = buffer.readInt();
     }
 }

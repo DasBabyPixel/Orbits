@@ -6,6 +6,7 @@ import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
+import orbits.server.InternalServer;
 
 public class OrbitsMainScreenGui extends ParentableAbstractGui {
 
@@ -42,7 +43,11 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
                 return true;
             });
             levelSelectGui.exit().onButtonPressed(e1 -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
-            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartIngameGui(level, orbits)));
+            levelSelectGui.levelSelector().value(level -> {
+                InternalServer server = new InternalServer(orbits, level);
+                server.start();
+                launcher().guiManager().openGui(new StartIngameGui(orbits, server.clientConnection(), server));
+            });
             launcher().guiManager().openGui(levelSelectGui);
         });
         addGUI(singleplayer);

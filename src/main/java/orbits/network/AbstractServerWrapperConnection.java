@@ -1,18 +1,13 @@
 package orbits.network;
 
-import de.dasbabypixel.api.property.Property;
 import gamelauncher.engine.network.Connection;
-import gamelauncher.engine.network.NetworkAddress;
-import gamelauncher.engine.network.NetworkClient;
 import gamelauncher.engine.network.packet.Packet;
 import gamelauncher.engine.network.packet.PacketEncoder;
 import gamelauncher.engine.network.packet.PacketHandler;
-import gamelauncher.engine.util.GameException;
-import gamelauncher.engine.util.Key;
-import gamelauncher.engine.util.function.GameSupplier;
-import gamelauncher.netty.standalone.PacketPayloadInC2S;
-import gamelauncher.netty.standalone.PacketPayloadInS2C;
-import java8.util.concurrent.CompletableFuture;
+import gamelauncher.netty.standalone.packet.s2c.PacketClientConnected;
+import gamelauncher.netty.standalone.packet.s2c.PacketClientDisconnected;
+import gamelauncher.netty.standalone.packet.s2c.PacketPayloadInC2S;
+import gamelauncher.netty.standalone.packet.s2c.PacketPayloadInS2C;
 
 import java.util.Collection;
 import java.util.Map;
@@ -20,16 +15,39 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class AbstractServerWrapperConnection implements Connection {
+public abstract class AbstractServerWrapperConnection extends WrapperConnection {
     protected final PacketEncoder encoder;
     private final Lock handlerLock = new ReentrantLock(true);
     private final Map<Class<?>, Collection<HandlerEntry<?>>> handlers = new ConcurrentHashMap<>();
-    protected final Connection connection;
+    private final Map<Integer, ReceiverConnection> clientConnections = new ConcurrentHashMap<>();
 
     public AbstractServerWrapperConnection(Connection connection) {
-        this.connection = connection;
+        super(connection);
         this.encoder = new PacketEncoder(connection.networkClient().packetRegistry());
-        connection.addHandler(PacketPayloadInS2C.class, (connection1, packet) -> {
+    }
+
+    protected void loadServer() {
+        handle.addHandler(PacketPayloadInC2S.class, (con, packet) -> {
+            ReceiverConnection ccon = clientConnections.get(packet.client);
+            Packet p = ServerUtils.receivePayload(encoder, con, packet.data);
+            serverReceivePacket(ccon, p);
+        });
+        handle.addHandler(PacketClientConnected.class, (con, packet) -> {
+            clientConnections.put(packet.id, createServerClientConnection(packet.id));
+            serverClientConnected(clientConnections.get(packet.id));
+        });
+        handle.addHandler(PacketClientDisconnected.class, (con, packet) -> {
+            Connection ccon = clientConnections.remove(packet.id);
+            serverClientDisconnected(ccon);
+        });
+    }
+
+    protected ReceiverConnection createServerClientConnection(int target) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void loadClient() {
+        handle.addHandler(PacketPayloadInS2C.class, (connection1, packet) -> {
             Packet p = ServerUtils.receivePayload(encoder, connection1, packet.data);
             Collection<HandlerEntry<?>> cc = handlers.get(p.getClass());
             if (cc != null) {
@@ -38,44 +56,32 @@ public abstract class AbstractServerWrapperConnection implements Connection {
                 }
             }
         });
-        connection.addHandler(PacketPayloadInC2S.class, (connection1, packet) -> {
-            Packet p = ServerUtils.receivePayload(encoder, connection1, packet.data);
-            Collection<HandlerEntry<?>> cc = handlers.get(p.getClass());
-            if (cc != null) {
-                for (HandlerEntry<?> e : cc) {
-                    e.receivePacket(this, p);
-                }
+    }
+
+    protected void serverClientConnected(Connection ccon) {
+
+    }
+
+    protected void serverClientDisconnected(Connection ccon) {
+
+    }
+
+    protected void serverReceivePacket(Connection ccon, Packet packet) {
+        Collection<HandlerEntry<?>> cc = handlers.get(packet.getClass());
+        if (cc != null) {
+            for (HandlerEntry<?> e : cc) {
+                e.receivePacket(ccon, packet);
             }
-        });
-    }
-
-    @Override
-    public NetworkAddress localAddress() {
-        return connection.localAddress();
-    }
-
-    @Override
-    public NetworkAddress remoteAddress() {
-        return connection.remoteAddress();
-    }
-
-    @Override
-    public Property<State> state() {
-        return connection.state();
-    }
-
-    @Override
-    public NetworkClient networkClient() {
-        return connection.networkClient();
-    }
-
-    @Override
-    public <T extends Packet> void addHandler(Class<T> packetTpye, PacketHandler<T> handler) {
-        handlerLock.lock();
-        if (!handlers.containsKey(packetTpye)) {
-            handlers.put(packetTpye, ConcurrentHashMap.newKeySet());
         }
-        handlers.get(packetTpye).add(new HandlerEntry<>(packetTpye, handler));
+    }
+
+    @Override
+    public <T extends Packet> void addHandler(Class<T> packetType, PacketHandler<T> handler) {
+        handlerLock.lock();
+        if (!handlers.containsKey(packetType)) {
+            handlers.put(packetType, ConcurrentHashMap.newKeySet());
+        }
+        handlers.get(packetType).add(new HandlerEntry<>(packetType, handler));
         handlerLock.unlock();
     }
 
@@ -89,55 +95,6 @@ public abstract class AbstractServerWrapperConnection implements Connection {
 
         }
         handlerLock.unlock();
-    }
-
-    @Override
-    public StateEnsurance ensureState(State state) throws GameException {
-        return connection.ensureState(state);
-    }
-
-    @Override
-    public void startTracking() {
-        connection.startTracking();
-    }
-
-    @Override
-    public void stopTracking() {
-        connection.stopTracking();
-    }
-
-    @Override
-    public void storeValue(Key key, Object value) {
-        connection.storeValue(key, value);
-    }
-
-    @Override
-    public <T> T storedValue(Key key) {
-        return connection.storedValue(key);
-    }
-
-    @Override
-    public <T> T storedValue(Key key, GameSupplier<T> defaultSupplier) {
-        return connection.storedValue(key, defaultSupplier);
-    }
-
-    @Override
-    public CompletableFuture<Void> cleanup() throws GameException {
-        return connection.cleanup();
-    }
-
-    @Override
-    public boolean cleanedUp() {
-        return connection.cleanedUp();
-    }
-
-    @Override
-    public CompletableFuture<Void> cleanupFuture() {
-        return connection.cleanupFuture();
-    }
-
-    public Connection connection() {
-        return connection;
     }
 
     static class HandlerEntry<T extends Packet> {

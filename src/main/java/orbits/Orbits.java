@@ -21,6 +21,7 @@ public class Orbits extends Plugin {
 
     @Override
     public void onEnable() throws GameException {
+        launcher().frame().icon().value(launcher().imageDecoder().decodeIcon(launcher().resourceLoader().resource(launcher().assets().resolve("orbits").resolve("textures").resolve("orbits.ico")).newResourceStream()));
         launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, TextGui.class, () -> {
             return new TextGui.Simple(launcher()) {
 //                @Override

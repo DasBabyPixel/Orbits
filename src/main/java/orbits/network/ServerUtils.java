@@ -6,8 +6,9 @@ import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.network.packet.Packet;
 import gamelauncher.engine.network.packet.PacketEncoder;
 import gamelauncher.engine.network.packet.PacketNotRegisteredException;
-import gamelauncher.netty.standalone.PacketPayloadOutC2S;
-import gamelauncher.netty.standalone.PacketPayloadOutS2A;
+import gamelauncher.netty.standalone.packet.c2s.PacketPayloadOutC2S;
+import gamelauncher.netty.standalone.packet.c2s.PacketPayloadOutS2A;
+import gamelauncher.netty.standalone.packet.c2s.PacketPayloadOutS2C;
 import java8.util.concurrent.CompletableFuture;
 
 import java.util.Arrays;
@@ -25,9 +26,18 @@ public class ServerUtils {
         return connection.sendPacketAsync(p);
     }
 
+    public static void serverSendPacket(PacketEncoder encoder, String serverId, Connection connection, int targetClient, Packet packet) {
+        connection.sendPacket(new PacketPayloadOutS2C(serverId, targetClient, prepareSendPacket(encoder, packet)));
+    }
+
+    public static CompletableFuture<Void> serverSendPacketAsync(PacketEncoder encoder, String serverId, Connection connection, int targetClient, Packet packet) {
+        return connection.sendPacketAsync(new PacketPayloadOutS2C(serverId, targetClient, prepareSendPacket(encoder, packet)));
+    }
+
     public static void serverSendPacketAll(PacketEncoder encoder, String serverId, Connection connection, Packet packet) {
         connection.sendPacket(new PacketPayloadOutS2A(serverId, prepareSendPacket(encoder, packet)));
     }
+
     public static CompletableFuture<Void> serverSendPacketAllAsync(PacketEncoder encoder, String serverId, Connection connection, Packet packet) {
         return connection.sendPacketAsync(new PacketPayloadOutS2A(serverId, prepareSendPacket(encoder, packet)));
     }

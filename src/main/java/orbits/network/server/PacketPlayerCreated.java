@@ -1,4 +1,4 @@
-package orbits.network;
+package orbits.network.server;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;

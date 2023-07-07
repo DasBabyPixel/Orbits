@@ -3,8 +3,10 @@ package orbits.gui;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
+import orbits.server.network.NetworkServer;
 
 public class MultiplayerSelectGui extends ParentableAbstractGui {
 
@@ -21,7 +23,12 @@ public class MultiplayerSelectGui extends ParentableAbstractGui {
                 return true;
             });
             levelSelectGui.exit().onButtonPressed(e1 -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
-            levelSelectGui.levelSelector().value(level -> launcher().guiManager().openGui(new StartIngameGuiMultiplayerOwner(level, orbits)));
+            levelSelectGui.levelSelector().value(level -> {
+                NetworkServer server = new NetworkServer(orbits, level);
+                server.start();
+                Threads.await(server.startFuture());
+                launcher().guiManager().openGui(new StartIngameGui(orbits, server.connection(), server));
+            });
             launcher().guiManager().openGui(levelSelectGui);
         });
         ((ButtonGui.Simple.TextForeground) buttonGui.foreground().value()).textGui().text().value(Component.text("Create"));

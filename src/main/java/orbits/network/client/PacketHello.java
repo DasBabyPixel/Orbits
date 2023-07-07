@@ -1,11 +1,11 @@
-package orbits.network;
+package orbits.network.client;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;
 
-public class PacketDone extends Packet {
-    public PacketDone() {
-        super("done");
+public class PacketHello extends Packet {
+    public PacketHello() {
+        super("orbits_hello");
     }
 
     @Override

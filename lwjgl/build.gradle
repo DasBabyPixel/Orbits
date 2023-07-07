@@ -1,6 +1,10 @@
+import edu.sc.seis.launch4j.Launch4jPlugin
+import edu.sc.seis.launch4j.tasks.Launch4jLibraryTask
+
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.github.johnrengelman.shadow'
+    id 'edu.sc.seis.launch4j'
 }
 
 dependencies {
@@ -15,14 +19,46 @@ shadowJar {
     archiveVersion.set('')
     minimize()
     minimize {
-        exclude(dependency('org.bouncycastle:.*:.*'))
+        exclude dependency('org.bouncycastle:.*:.*')
     }
-}
-
-jar {
     manifest {
         attributes.put('Main-Class', 'orbits.lwjgl.Start')
     }
+}
+
+launch4j {
+    jarTask tasks.shadowJar
+    outfile = "${project.name}.exe"
+    headerType = 'gui'
+    mainClassName = 'orbits.lwjgl.Start'
+    icon = "${projectDir}/src/main/resources/orbits.ico"
+    jreMinVersion = '11'
+    jvmOptions = ['-Dgamelauncher.name=GameLauncherTestEXE', '-Dgamelauncher.game_directory=application']
+}
+
+static File launch4jOutput(Launch4jLibraryTask task) {
+    return task.outputDirectory.file(task.outfile.get()).get().asFile
+}
+
+tasks.register('createDebugExe', Launch4jLibraryTask) {
+    group = Launch4jPlugin.LAUNCH4J_GROUP
+    outfile = "${project.name}-debug.exe"
+    headerType = 'console'
+    jvmOptions.add '-Dgamelauncher.debug=true'
+}
+
+tasks.register('runWindowsDebug', Exec) {
+    dependsOn createDebugExe
+    group = 'run'
+    workingDir = parent.file('run')
+    commandLine launch4jOutput(tasks.createDebugExe)
+}
+
+tasks.register('runWindows', Exec) {
+    dependsOn createExe
+    group = 'run'
+    workingDir = parent.file('run')
+    commandLine launch4jOutput(tasks.createExe)
 }
 
 java {

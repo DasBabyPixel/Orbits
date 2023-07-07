@@ -4,38 +4,53 @@ import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.ColorGui;
 import gamelauncher.engine.gui.guis.TextGui;
-import gamelauncher.engine.util.Color;
+import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
+import gamelauncher.netty.standalone.packet.c2s.PacketRequestServerId;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.data.LocalPlayer;
 import orbits.data.level.Level;
 import orbits.lobby.Lobby;
+import orbits.network.client.PacketHello;
+import orbits.network.client.PacketReadyToPlay;
+import orbits.network.client.PacketStart;
+import orbits.network.server.PacketLevel;
+import orbits.network.server.PacketLevelChecksum;
+import orbits.server.OrbitsServer;
+import orbits.server.network.NetworkServer;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class StartIngameGui extends ParentableAbstractGui {
     protected final OrbitsGame orbits;
     protected final Random r = new Random(0);
     protected final IntList players = new IntArrayList();
     protected final List<PlayerGui> playerGuis = new ArrayList<>();
+    protected final @Nullable OrbitsServer server;
     protected final Lobby lobby;
     protected final ButtonGui back;
-    protected ButtonGui start;
+    protected final CompletableFuture<Void> handshakeFuture = new CompletableFuture<>();
 
-    public StartIngameGui(Level level, OrbitsGame orbits) throws GameException {
+    public StartIngameGui(OrbitsGame orbits, Connection connection, @Nullable OrbitsServer server) throws GameException {
         super(orbits.launcher());
+        this.server = server;
         this.orbits = orbits;
         lobby = new Lobby();
-        lobby.availableData().level = level;
         orbits.currentLobby(lobby);
+
+        performHandshake(connection);
 
         back = launcher().guiManager().createGui(ButtonGui.class);
         back.xProperty().bind(xProperty().add(10));
@@ -45,20 +60,73 @@ public class StartIngameGui extends ParentableAbstractGui {
         ((ButtonGui.Simple.TextForeground) back.foreground().value()).textGui().text().value(Component.text("Back"));
         back.onButtonPressed(event -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
         addGUI(back);
-        addStart();
+
+        if (server != null) {
+            ButtonGui start = launcher().guiManager().createGui(ButtonGui.class);
+            start.xProperty().bind(xProperty().add(widthProperty()).subtract(10).subtract(start.widthProperty()));
+            start.yProperty().bind(back.yProperty());
+            start.heightProperty().bind(back.heightProperty());
+            start.widthProperty().bind(back.widthProperty());
+            ((ButtonGui.Simple.TextForeground) start.foreground().value()).textGui().text().value(Component.text("Start"));
+            start.onButtonPressed(event -> connection.sendPacket(new PacketStart()));
+            addGUI(start);
+            if (server instanceof NetworkServer) {
+                server.startFuture().thenRun(() -> {
+                    String id = ((NetworkServer) server).serverId();
+                    try {
+                        TextGui idText = launcher().guiManager().createGui(TextGui.class);
+                        idText.heightProperty().bind(back.heightProperty());
+                        idText.xProperty().bind(xProperty().add(widthProperty().subtract(idText.widthProperty()).divide(2)));
+                        idText.yProperty().bind(back.yProperty());
+                        idText.color().set(1, 1, 1, 1);
+                        idText.text().value(Component.text(id));
+                        addGUI(idText);
+                    } catch (GameException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        }
     }
 
-    protected void addStart() throws GameException {
-        start = launcher().guiManager().createGui(ButtonGui.class);
-        start.xProperty().bind(xProperty().add(widthProperty()).subtract(10).subtract(start.widthProperty()));
-        start.yProperty().bind(back.yProperty());
-        start.heightProperty().bind(back.heightProperty());
-        start.widthProperty().bind(back.widthProperty());
-        ((ButtonGui.Simple.TextForeground) start.foreground().value()).textGui().text().value(Component.text("Start"));
-        start.onButtonPressed(event -> {
-            start();
+    private void performHandshake(Connection connection) throws GameException {
+        Connection.State state = connection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
+        if (state != Connection.State.CONNECTED) throw new GameException();
+
+        connection.addHandler(PacketLevel.class, (con, packet) -> {
+            orbits.launcher().gameThread().submit(() -> {
+                Level level = packet.level;
+                try {
+                    orbits.levelStorage().saveLevel(level);
+                } catch (GameException e) {
+                    throw new RuntimeException(e);
+                }
+                orbits.currentLobby().availableData().level = level;
+                checkComplete(con);
+            });
         });
-        addGUI(start);
+        connection.addHandler(PacketLevelChecksum.class, (con, packet) -> {
+            final UUID levelId = packet.levelId;
+            final long checksum = packet.checksum;
+            orbits.launcher().gameThread().submit(() -> {
+                Level level = orbits.levelStorage().findLevel(levelId, checksum);
+                if (level == null) {
+                    con.sendPacket(new PacketRequestServerId());
+                } else {
+                    lobby.availableData().level = level;
+                    checkComplete(con);
+                }
+            });
+        });
+
+        connection.sendPacket(new PacketHello());
+    }
+
+    private void checkComplete(Connection connection) {
+        if (lobby.availableData().complete()) {
+            connection.sendPacket(new PacketReadyToPlay());
+            handshakeFuture.complete(null);
+        }
     }
 
     protected void start() throws GameException {
@@ -145,10 +213,6 @@ public class StartIngameGui extends ParentableAbstractGui {
         } else {
             pg.yProperty().bind(back.yProperty().subtract(pg.heightProperty()).subtract(10));
         }
-    }
-
-    protected Vector4f newColor() {
-        return new Vector4f(r.nextFloat(), r.nextFloat(), r.nextFloat(), 1.0F);
     }
 
     protected static class PlayerGui extends ParentableAbstractGui {

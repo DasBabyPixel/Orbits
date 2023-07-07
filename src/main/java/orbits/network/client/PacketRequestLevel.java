@@ -1,22 +1,23 @@
-package orbits.network;
+package orbits.network.client;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;
+import orbits.network.server.PacketLevel;
 
 import java.util.UUID;
 
 /**
- * This packet is sent by a player to request a {@link LevelPacket} from the game owner. The game owner MUST respond.
+ * This packet is sent by a player to request a {@link PacketLevel} from the game owner. The game owner MUST respond.
  */
-public class RequestLevelPacket extends Packet {
+public class PacketRequestLevel extends Packet {
     public UUID levelId;
 
-    public RequestLevelPacket(UUID levelId) {
+    public PacketRequestLevel(UUID levelId) {
         super("orbits_request_level");
         this.levelId = levelId;
     }
 
-    public RequestLevelPacket() {
+    public PacketRequestLevel() {
         this(null);
     }
 

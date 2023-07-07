@@ -1,17 +1,17 @@
-package orbits.network;
+package orbits.network.client;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;
 
-public class NewPlayerPacket extends Packet {
+public class PacketNewPlayer extends Packet {
     public int id;
     public char ch;
 
-    public NewPlayerPacket() {
+    public PacketNewPlayer() {
         super("new_player");
     }
 
-    public NewPlayerPacket(int id, char ch) {
+    public PacketNewPlayer(int id, char ch) {
         this();
         this.id = id;
         this.ch = ch;

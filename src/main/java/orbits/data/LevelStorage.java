@@ -64,8 +64,8 @@ public class LevelStorage {
         DataBuffer dataBuffer = new DataBuffer(new DataMemory(bytes));
         Level level = new Level();
         level.read(dataBuffer);
+        level.checksum(this.checksum.getValue());
         if (!level.uuid().equals(uuid)) return null;
         return level;
     }
-
 }

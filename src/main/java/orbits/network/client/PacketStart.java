@@ -1,10 +1,10 @@
-package orbits.network;
+package orbits.network.client;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.network.packet.Packet;
 
-public class StartPacket extends Packet {
-    public StartPacket() {
+public class PacketStart extends Packet {
+    public PacketStart() {
         super("orbits_start");
     }
 

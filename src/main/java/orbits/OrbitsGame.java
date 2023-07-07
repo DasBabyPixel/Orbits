@@ -8,7 +8,6 @@ import gamelauncher.engine.gui.GuiDistribution;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.render.Framebuffer;
-import gamelauncher.engine.render.RenderMode;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import orbits.data.LevelStorage;
@@ -36,6 +35,7 @@ public class OrbitsGame extends Game {
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
         packetHandlers().registerHandlers();
+        launcher().frame().fullscreen().value(true);
     }
 
     @Override
