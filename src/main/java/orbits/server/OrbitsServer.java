@@ -4,24 +4,26 @@ import gamelauncher.engine.GameLauncher;
 import gamelauncher.engine.GameThread;
 import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.Key;
 import gamelauncher.engine.util.logging.Logger;
 import gamelauncher.netty.standalone.packet.s2c.PacketKicked;
 import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.data.level.Level;
 import orbits.lobby.Lobby;
+import orbits.network.client.PacketDeletePlayer;
 import orbits.network.client.PacketHello;
 import orbits.network.client.PacketNewPlayer;
 import orbits.network.client.PacketRequestLevel;
-import orbits.network.server.PacketLevel;
-import orbits.network.server.PacketLevelChecksum;
-import orbits.network.server.PacketWelcome;
+import orbits.network.server.*;
 import org.joml.Vector4f;
 
-import java.util.Random;
+import java.util.*;
 
 public abstract class OrbitsServer {
 
+    private static final Key KEY_IDS = new Key("orbits", "ids");
+    private static final Key KEY_ID = new Key("orbits", "id");
     protected static final Logger logger = Logger.logger();
     protected final Random random = new Random(0);
     protected final GameLauncher launcher;
@@ -31,6 +33,8 @@ public abstract class OrbitsServer {
     protected final CompletableFuture<Void> startFuture = new CompletableFuture<>();
     protected final Lobby lobby;
     protected int state = 0; // 0 = Lobby, 1 = Ingame
+    protected final Collection<Integer> players = new ArrayList<>();
+    protected int nextBaseId = 1;
     protected Connection connection;
 
     public OrbitsServer(OrbitsGame orbits, Level level) {
@@ -68,7 +72,27 @@ public abstract class OrbitsServer {
         });
         connection.addHandler(PacketNewPlayer.class, (con, packet) -> {
             thread.submit(() -> {
+                int baseId = con.storedValue(KEY_ID, () -> {
+                    int id = nextBaseId;
+                    nextBaseId = nextBaseId + Character.MAX_VALUE;
+                    return id;
+                });
+                Set<Integer> ids = con.storedValue(KEY_IDS, HashSet::new);
+                if (ids.contains(packet.id)) return;
+                ids.add(packet.id);
+                players.add(baseId + packet.id);
 
+                con.sendPacket(new PacketPlayerCreated(packet.id, packet.ch, newColor()));
+            });
+        });
+        connection.addHandler(PacketDeletePlayer.class, (con, packet) -> {
+            thread.submit(() -> {
+                Set<Integer> ids = con.storedValue(KEY_IDS, HashSet::new);
+                if (!ids.contains(packet.id)) return;
+                ids.remove(packet.id);
+                players.remove(con.<Integer>storedValue(KEY_ID) + packet.id);
+
+                con.sendPacket(new PacketPlayerDeleted(packet.id));
             });
         });
         startFuture.complete(null);

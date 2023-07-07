@@ -10,23 +10,25 @@ import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import gamelauncher.netty.standalone.packet.c2s.PacketRequestServerId;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.*;
 import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.data.LocalPlayer;
+import orbits.data.Player;
+import orbits.data.Vector3;
 import orbits.data.level.Level;
 import orbits.lobby.Lobby;
-import orbits.network.client.PacketHello;
-import orbits.network.client.PacketReadyToPlay;
-import orbits.network.client.PacketStart;
+import orbits.network.client.*;
 import orbits.network.server.PacketLevel;
 import orbits.network.server.PacketLevelChecksum;
+import orbits.network.server.PacketPlayerCreated;
+import orbits.network.server.PacketPlayerDeleted;
 import orbits.server.OrbitsServer;
 import orbits.server.network.NetworkServer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 
+import javax.management.remote.JMXConnectionNotification;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -38,19 +40,25 @@ public class StartIngameGui extends ParentableAbstractGui {
     protected final Random r = new Random(0);
     protected final IntList players = new IntArrayList();
     protected final List<PlayerGui> playerGuis = new ArrayList<>();
+    protected final Int2ObjectMap<Vector3> remotePlayers = new Int2ObjectOpenHashMap<>();
     protected final @Nullable OrbitsServer server;
     protected final Lobby lobby;
     protected final ButtonGui back;
+    protected final Connection connection;
     protected final CompletableFuture<Void> handshakeFuture = new CompletableFuture<>();
 
     public StartIngameGui(OrbitsGame orbits, Connection connection, @Nullable OrbitsServer server) throws GameException {
         super(orbits.launcher());
         this.server = server;
         this.orbits = orbits;
+        this.connection = connection;
         lobby = new Lobby();
         orbits.currentLobby(lobby);
 
         performHandshake(connection);
+
+        connection.addHandler(PacketPlayerCreated.class, (con, packet) -> launcher().gameThread().submit(() -> addPlayer(packet.id, packet.display, packet.color)));
+        connection.addHandler(PacketPlayerDeleted.class, (con, packet) -> launcher().gameThread().submit(() -> removePlayer(packet.id)));
 
         back = launcher().guiManager().createGui(ButtonGui.class);
         back.xProperty().bind(xProperty().add(10));
@@ -130,12 +138,6 @@ public class StartIngameGui extends ParentableAbstractGui {
     }
 
     protected void start() throws GameException {
-        if (lobby.availableData().level.startPositions().isEmpty()) return;
-        if (players.size() < 2) return;
-        forceStart();
-    }
-
-    protected void forceStart() throws GameException {
         Lobby l = orbits.currentLobby();
         for (int i = 0; i < players.size(); i++) {
             int id = players.getInt(i);
@@ -146,12 +148,10 @@ public class StartIngameGui extends ParentableAbstractGui {
             player.color().z(pg.color.z);
             l.players().add(player);
         }
-        preStart();
-        l.start(orbits);
+        if (server == null) {
+            l.start(orbits);
+        }
         launcher().guiManager().openGui(startCreateGui());
-    }
-
-    protected void preStart() {
     }
 
     protected IngameGui startCreateGui() throws GameException {
@@ -169,9 +169,9 @@ public class StartIngameGui extends ParentableAbstractGui {
 
     protected void handleCharacter(KeyboardKeybindEvent.CharacterKeybindEvent event) throws GameException {
         if (players.contains(event.keybind().uniqueId())) {
-            removePlayer(event.keybind().uniqueId());
+            connection.sendPacket(new PacketDeletePlayer(event.keybind().uniqueId()));
         } else if (event.character() != ' ') {
-            newPlayer(event.keybind().uniqueId(), event.character());
+            connection.sendPacket(new PacketNewPlayer(event.keybind().uniqueId(), event.character()));
         }
     }
 
@@ -190,11 +190,11 @@ public class StartIngameGui extends ParentableAbstractGui {
         removeGUI(pg);
     }
 
-    protected PlayerGui newPlayer(int id, char display) throws GameException {
-        return newPlayer(id, display, newColor());
-    }
-
-    protected PlayerGui newPlayer(int id, char display, Vector4f color) throws GameException {
+    protected PlayerGui addPlayer(int id, char display, Vector4f color) throws GameException {
+        if (display == 0) {
+            remotePlayers.put(id, new Vector3(color.x, color.y, color.z));
+            return null;
+        }
         players.add(id);
         PlayerGui pg = new PlayerGui(orbits, Character.toString(display), color);
         pg.xProperty().bind(xProperty().add(10));

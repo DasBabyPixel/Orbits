@@ -8,8 +8,11 @@ import gamelauncher.engine.network.packet.Packet;
 import gamelauncher.engine.network.packet.PacketEncoder;
 import gamelauncher.engine.network.packet.PacketHandler;
 import gamelauncher.engine.resource.AbstractGameResource;
+import gamelauncher.engine.resource.GameResource;
 import gamelauncher.engine.settings.SettingSection;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.Key;
+import gamelauncher.engine.util.function.GameSupplier;
 import gamelauncher.netty.standalone.packet.c2s.PacketRequestServerId;
 import gamelauncher.netty.standalone.packet.s2c.PacketClientConnected;
 import gamelauncher.netty.standalone.packet.s2c.PacketClientDisconnected;
@@ -69,9 +72,35 @@ public class NetworkServer extends OrbitsServer {
         }
         rawConnection.addHandler(PacketClientConnected.class, clientConnectedHandler = new ClientConnectedHandler(this));
         rawConnection.addHandler(PacketClientDisconnected.class, clientDisconnectedHandler = new ClientDisconnectedHandler(this));
+        GameResource resource = new AbstractGameResource() {
+            @Override
+            protected CompletableFuture<Void> cleanup0() throws GameException {
+                return null;
+            }
+
+            @Override
+            protected boolean autoTrack() {
+                return false;
+            }
+        };
         Connection connection = new AbstractServerWrapperConnection(rawConnection) {
             {
                 loadServer();
+            }
+
+            @Override
+            public void storeValue(Key key, Object value) {
+                resource.storeValue(key, value);
+            }
+
+            @Override
+            public <T> T storedValue(Key key) {
+                return resource.storedValue(key);
+            }
+
+            @Override
+            public <T> T storedValue(Key key, GameSupplier<T> defaultSupplier) {
+                return resource.storedValue(key, defaultSupplier);
             }
 
             @Override

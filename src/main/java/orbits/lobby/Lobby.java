@@ -43,8 +43,17 @@ public class Lobby {
     private float spawnSpeed = 0.5F * 7;
     private int stopTimer = -1;
     private OrbitsGame orbitsGame;
+    private boolean owner = true;
 
     public Lobby() {
+    }
+
+    public boolean owner() {
+        return owner;
+    }
+
+    public void owner(boolean owner) {
+        this.owner = owner;
     }
 
     public AvailableData availableData() {
@@ -163,53 +172,54 @@ public class Lobby {
             world.addBody(body);
         }
 
-        int startPosIdx = 0;
-        Map<StartPosition, List<Player>> positions = new HashMap<>();
-        for (Player player : players) {
-            StartPosition pos = level.startPositions().get((startPosIdx++) % level.startPositions().size());
-            positions.computeIfAbsent(pos, a -> new ArrayList<>()).add(player);
-            newEntity(player);
-        }
-        for (Map.Entry<StartPosition, List<Player>> entry : positions.entrySet()) {
-            double r = Math.PI * Math.random();
-            int idx = 0;
-            int maxIdx = entry.getValue().size();
-            for (; idx < maxIdx; idx++) {
-                Player player = entry.getValue().get(idx);
-                double worldX = Math.cos(2 * Math.PI * idx / maxIdx + r);
-                double worldY = Math.sin(2 * Math.PI * idx / maxIdx + r);
-                double x = toLocalSpaceX(worldX);
-                double y = worldY;
-                player.position().x(entry.getKey().position().x() + x * entry.getKey().radius());
-                player.position().y(entry.getKey().position().y() + y * entry.getKey().radius());
-                player.motion().x(toLocalSpaceX(worldY * speed));
-                player.motion().y(-worldX * speed);
+        if (owner) {
+            int startPosIdx = 0;
+            Map<StartPosition, List<Player>> positions = new HashMap<>();
+            for (Player player : players) {
+                StartPosition pos = level.startPositions().get((startPosIdx++) % level.startPositions().size());
+                positions.computeIfAbsent(pos, a -> new ArrayList<>()).add(player);
+                newEntity(player);
             }
-        }
-
-        for (Entity entity : entities.values()) {
-            if (entity instanceof Ball) {
-                Ball ball = (Ball) entity;
-                Body body = new Body();
-                body.setUserData(ball);
-                ball.body = body;
-                BodyFixture f = body.addFixture(Geometry.createCircle(playerSize / 2 * scale), 1, 0, 1);
-                f.setRestitutionVelocity(0);
-                body.translate(toWorldSpaceX(ball.position().x()), ball.position().y());
-                body.setMass(new Mass(new Vector2(), 1, 0));
-                if (speed > 0.3) body.setBullet(true);
-                body.setLinearVelocity(toWorldSpaceX(toWorldSpaceX(ball.motion().x())), ball.motion().y());
-
-                if (entity instanceof Player) {
-                    ball.ownerId(entity.entityId());
-                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_PLAYER));
-                    body.setAtRestDetectionEnabled(false);
-                } else {
-                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_BALL));
+            for (Map.Entry<StartPosition, List<Player>> entry : positions.entrySet()) {
+                double r = Math.PI * Math.random();
+                int idx = 0;
+                int maxIdx = entry.getValue().size();
+                for (; idx < maxIdx; idx++) {
+                    Player player = entry.getValue().get(idx);
+                    double worldX = Math.cos(2 * Math.PI * idx / maxIdx + r);
+                    double worldY = Math.sin(2 * Math.PI * idx / maxIdx + r);
+                    double x = toLocalSpaceX(worldX);
+                    double y = worldY;
+                    player.position().x(entry.getKey().position().x() + x * entry.getKey().radius());
+                    player.position().y(entry.getKey().position().y() + y * entry.getKey().radius());
+                    player.motion().x(toLocalSpaceX(worldY * speed));
+                    player.motion().y(-worldX * speed);
                 }
-                world.addBody(body);
             }
         }
+//        for (Entity entity : entities.values()) {
+//            if (entity instanceof Ball) {
+//                Ball ball = (Ball) entity;
+//                Body body = new Body();
+//                body.setUserData(ball);
+//                ball.body = body;
+//                BodyFixture f = body.addFixture(Geometry.createCircle(playerSize / 2 * scale), 1, 0, 1);
+//                f.setRestitutionVelocity(0);
+//                body.translate(toWorldSpaceX(ball.position().x()), ball.position().y());
+//                body.setMass(new Mass(new Vector2(), 1, 0));
+//                if (speed > 0.3) body.setBullet(true);
+//                body.setLinearVelocity(toWorldSpaceX(toWorldSpaceX(ball.motion().x())), ball.motion().y());
+//
+//                if (entity instanceof Player) {
+//                    ball.ownerId(entity.entityId());
+//                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_PLAYER));
+//                    body.setAtRestDetectionEnabled(false);
+//                } else {
+//                    f.setFilter(new BallFilter(ball, BallFilter.TYPE_BALL));
+//                }
+//                world.addBody(body);
+//            }
+//        }
     }
 
     private void reset(Ball ball) {

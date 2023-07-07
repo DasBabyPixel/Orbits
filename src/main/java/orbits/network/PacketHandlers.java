@@ -52,15 +52,12 @@ public class PacketHandlers {
 
     public void unregisterHandlers() throws PacketNotRegisteredException {
         client.packetRegistry().unregister(PacketLevelChecksum.class);
-        client.removeHandler(PacketLevelChecksum.class, levelChecksumPacket);
         client.packetRegistry().unregister(PacketLevel.class);
-        client.removeHandler(PacketLevel.class, levelPacket);
         client.packetRegistry().unregister(PacketStart.class);
         client.removeHandler(PacketStart.class, startPacket);
         client.packetRegistry().unregister(PacketReadyToPlay.class);
         client.removeHandler(PacketReadyToPlay.class, readyToPlayPacket);
         client.packetRegistry().unregister(PacketRequestLevel.class);
-        client.removeHandler(PacketRequestLevel.class, requestLevelPacket);
 
         client.packetRegistry().unregister(PacketPlayerCreated.class);
         client.packetRegistry().unregister(PacketPlayerDeleted.class);

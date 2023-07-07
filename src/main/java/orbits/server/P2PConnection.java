@@ -13,6 +13,7 @@ import java8.util.concurrent.CompletableFuture;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -78,7 +79,29 @@ public class P2PConnection extends AbstractGameResource implements Connection {
 
     @Override
     public StateEnsurance ensureState(State state) throws GameException {
-        throw new UnsupportedOperationException();
+        State s = this.state.value();
+        return new StateEnsurance() {
+
+            @Override
+            public StateEnsurance timeoutAfter(long time, TimeUnit unit) {
+                return this;
+            }
+
+            @Override
+            public StateEnsurance timeoutHandler(TimeoutHandler timeoutHandler) {
+                return this;
+            }
+
+            @Override
+            public State await() {
+                return s;
+            }
+
+            @Override
+            public CompletableFuture<State> future() {
+                return CompletableFuture.completedFuture(s);
+            }
+        };
     }
 
     @Override
