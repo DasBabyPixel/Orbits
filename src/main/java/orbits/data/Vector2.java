@@ -26,7 +26,7 @@ public class Vector2 implements DataSerializable {
     }
 
     public Vector2 set(Vector2 vector) {
-        x(vector.x());
+        x(vector.x);
         y(vector.y);
         return this;
     }
@@ -46,5 +46,10 @@ public class Vector2 implements DataSerializable {
     public void multiply(double i) {
         this.x *= i;
         this.y *= i;
+    }
+
+    @Override
+    public String toString() {
+        return "Vector2{" + "x=" + x + ", y=" + y + '}';
     }
 }

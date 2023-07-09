@@ -10,6 +10,11 @@ public class PacketEntityRemove extends Packet {
         super("orbits_entity_remove");
     }
 
+    public PacketEntityRemove(int entityId) {
+        this();
+        this.entityId = entityId;
+    }
+
     @Override
     protected void write0(DataBuffer buffer) {
         buffer.writeInt(entityId);

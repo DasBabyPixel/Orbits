@@ -1,13 +1,13 @@
 package orbits.server;
 
 import de.dasbabypixel.api.property.Property;
+import gamelauncher.engine.data.DataBuffer;
+import gamelauncher.engine.data.DataMemory;
 import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.network.NetworkAddress;
 import gamelauncher.engine.network.NetworkClient;
-import gamelauncher.engine.network.packet.Packet;
-import gamelauncher.engine.network.packet.PacketHandler;
+import gamelauncher.engine.network.packet.*;
 import gamelauncher.engine.resource.AbstractGameResource;
-import gamelauncher.engine.util.GameException;
 import java8.util.concurrent.CompletableFuture;
 
 import java.util.Collection;
@@ -24,13 +24,19 @@ public class P2PConnection extends AbstractGameResource implements Connection {
     private final Lock handlerLock = new ReentrantLock(true);
     private final Map<Class<?>, Collection<P2PConnection.HandlerEntry<?>>> handlers = new ConcurrentHashMap<>();
     private final P2PConnection p;
+    private final PacketEncoder encoder;
+    private final PacketRegistry registry;
 
-    public P2PConnection() {
-        p = new P2PConnection(this);
+    public P2PConnection(PacketRegistry registry) {
+        this.registry = registry;
+        this.encoder = new PacketEncoder(registry);
+        p = new P2PConnection(registry, this);
         remoteAddress = p.localAddress;
     }
 
-    private P2PConnection(P2PConnection p) {
+    private P2PConnection(PacketRegistry registry, P2PConnection p) {
+        this.registry = registry;
+        this.encoder = p.encoder;
         this.p = p;
         remoteAddress = p.localAddress;
     }
@@ -78,7 +84,7 @@ public class P2PConnection extends AbstractGameResource implements Connection {
     }
 
     @Override
-    public StateEnsurance ensureState(State state) throws GameException {
+    public StateEnsurance ensureState(State state) {
         State s = this.state.value();
         return new StateEnsurance() {
 
@@ -106,7 +112,20 @@ public class P2PConnection extends AbstractGameResource implements Connection {
 
     @Override
     public void sendPacket(Packet packet) {
-        p.receivePacket(packet);
+        try {
+            registry.ensureRegistered(packet.getClass());
+        } catch (PacketNotRegisteredException e) {
+            throw new RuntimeException(e);
+        }
+        DataMemory memory = new DataMemory();
+        DataBuffer db = new DataBuffer(memory);
+        try {
+            encoder.write(db, packet);
+            Packet p = encoder.read(db);
+            this.p.receivePacket(p);
+        } catch (PacketNotRegisteredException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -116,7 +135,7 @@ public class P2PConnection extends AbstractGameResource implements Connection {
     }
 
     @Override
-    protected CompletableFuture<Void> cleanup0() throws GameException {
+    protected CompletableFuture<Void> cleanup0() {
         return null;
     }
 

@@ -1,28 +1,16 @@
 package orbits.network;
 
 import gamelauncher.engine.network.NetworkClient;
-import gamelauncher.engine.network.packet.PacketHandler;
-import gamelauncher.engine.network.packet.PacketNotRegisteredException;
-import gamelauncher.engine.util.GameException;
 import gamelauncher.netty.standalone.StandaloneServer;
 import orbits.OrbitsGame;
-import orbits.data.level.Level;
 import orbits.network.client.*;
 import orbits.network.server.*;
-
-import java.util.UUID;
 
 /**
  * TODO: Multiplayer
  */
 public class PacketHandlers {
     private OrbitsGame orbits;
-    private final PacketHandler<PacketReadyToPlay> readyToPlayPacket = (connection, packet) -> {
-        orbits.launcher().gameThread().submit(() -> {
-
-        });
-    };
-    private final PacketHandler<PacketStart> startPacket = (connection, packet) -> orbits.launcher().gameThread().submit(() -> orbits.currentLobby().start(orbits));
     private NetworkClient client;
 
     public PacketHandlers(OrbitsGame orbits) {
@@ -34,10 +22,16 @@ public class PacketHandlers {
         client.packetRegistry().register(PacketLevelChecksum.class, PacketLevelChecksum::new);
         client.packetRegistry().register(PacketLevel.class, PacketLevel::new);
         client.packetRegistry().register(PacketStart.class, PacketStart::new);
-        client.addHandler(PacketStart.class, startPacket);
         client.packetRegistry().register(PacketReadyToPlay.class, PacketReadyToPlay::new);
-        client.addHandler(PacketReadyToPlay.class, readyToPlayPacket);
         client.packetRegistry().register(PacketRequestLevel.class, PacketRequestLevel::new);
+        client.packetRegistry().register(PacketEntityData.class, PacketEntityData::new);
+        client.packetRegistry().register(PacketEntityRemove.class, PacketEntityRemove::new);
+        client.packetRegistry().register(PacketPause.class, PacketPause::new);
+        client.packetRegistry().register(PacketPaused.class, PacketPaused::new);
+        client.packetRegistry().register(PacketIdModifier.class, PacketIdModifier::new);
+        client.packetRegistry().register(PacketAddTrail.class, PacketAddTrail::new);
+        client.packetRegistry().register(PacketRemoveTrail.class, PacketRemoveTrail::new);
+        client.packetRegistry().register(PacketJoined.class, PacketJoined::new);
 
         client.packetRegistry().register(PacketPlayerCreated.class, PacketPlayerCreated::new);
         client.packetRegistry().register(PacketPlayerDeleted.class, PacketPlayerDeleted::new);
@@ -45,26 +39,10 @@ public class PacketHandlers {
         client.packetRegistry().register(PacketDeletePlayer.class, PacketDeletePlayer::new);
         client.packetRegistry().register(PacketIngame.class, PacketIngame::new);
         client.packetRegistry().register(PacketPress.class, PacketPress::new);
+        client.packetRegistry().register(PacketHello.class, PacketHello::new);
+        client.packetRegistry().register(PacketWelcome.class, PacketWelcome::new);
 
         StandaloneServer.registerPackets(client.packetRegistry());
-
-    }
-
-    public void unregisterHandlers() throws PacketNotRegisteredException {
-        client.packetRegistry().unregister(PacketLevelChecksum.class);
-        client.packetRegistry().unregister(PacketLevel.class);
-        client.packetRegistry().unregister(PacketStart.class);
-        client.removeHandler(PacketStart.class, startPacket);
-        client.packetRegistry().unregister(PacketReadyToPlay.class);
-        client.removeHandler(PacketReadyToPlay.class, readyToPlayPacket);
-        client.packetRegistry().unregister(PacketRequestLevel.class);
-
-        client.packetRegistry().unregister(PacketPlayerCreated.class);
-        client.packetRegistry().unregister(PacketPlayerDeleted.class);
-        client.packetRegistry().unregister(PacketNewPlayer.class);
-        client.packetRegistry().unregister(PacketDeletePlayer.class);
-        client.packetRegistry().unregister(PacketIngame.class);
-        client.packetRegistry().unregister(PacketPress.class);
 
     }
 }

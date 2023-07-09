@@ -9,26 +9,22 @@ import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
-import gamelauncher.netty.standalone.packet.c2s.PacketRequestServerId;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
 import orbits.data.LocalPlayer;
-import orbits.data.Player;
 import orbits.data.Vector3;
 import orbits.data.level.Level;
-import orbits.lobby.Lobby;
+import orbits.ingame.Game;
 import orbits.network.client.*;
-import orbits.network.server.PacketLevel;
-import orbits.network.server.PacketLevelChecksum;
-import orbits.network.server.PacketPlayerCreated;
-import orbits.network.server.PacketPlayerDeleted;
+import orbits.network.server.*;
 import orbits.server.OrbitsServer;
 import orbits.server.network.NetworkServer;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector4f;
 
-import javax.management.remote.JMXConnectionNotification;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -41,24 +37,42 @@ public class StartIngameGui extends ParentableAbstractGui {
     protected final IntList players = new IntArrayList();
     protected final List<PlayerGui> playerGuis = new ArrayList<>();
     protected final Int2ObjectMap<Vector3> remotePlayers = new Int2ObjectOpenHashMap<>();
-    protected final @Nullable OrbitsServer server;
-    protected final Lobby lobby;
+    protected final Game game;
     protected final ButtonGui back;
-    protected final Connection connection;
     protected final CompletableFuture<Void> handshakeFuture = new CompletableFuture<>();
+    protected Connection connection;
+    protected @Nullable OrbitsServer server;
+    protected int idModifier = 0;
 
     public StartIngameGui(OrbitsGame orbits, Connection connection, @Nullable OrbitsServer server) throws GameException {
         super(orbits.launcher());
         this.server = server;
         this.orbits = orbits;
         this.connection = connection;
-        lobby = new Lobby();
-        orbits.currentLobby(lobby);
+        game = new Game();
+        game.owner(false);
+        orbits.currentLobby(game);
 
         performHandshake(connection);
 
+        connection.addHandler(PacketIdModifier.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                idModifier = packet.modifier;
+            });
+        });
+        connection.cleanupFuture().thenRun(() -> {
+            if (initialized()) {
+                launcher().gameThread().submit(() -> {
+                    this.connection = null;
+                    launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits));
+                });
+            }
+        });
         connection.addHandler(PacketPlayerCreated.class, (con, packet) -> launcher().gameThread().submit(() -> addPlayer(packet.id, packet.display, packet.color)));
         connection.addHandler(PacketPlayerDeleted.class, (con, packet) -> launcher().gameThread().submit(() -> removePlayer(packet.id)));
+        connection.addHandler(PacketIngame.class, (con, packet) -> {
+            launcher().gameThread().submit(this::start);
+        });
 
         back = launcher().guiManager().createGui(ButtonGui.class);
         back.xProperty().bind(xProperty().add(10));
@@ -119,9 +133,9 @@ public class StartIngameGui extends ParentableAbstractGui {
             orbits.launcher().gameThread().submit(() -> {
                 Level level = orbits.levelStorage().findLevel(levelId, checksum);
                 if (level == null) {
-                    con.sendPacket(new PacketRequestServerId());
+                    con.sendPacket(new PacketRequestLevel(packet.levelId));
                 } else {
-                    lobby.availableData().level = level;
+                    game.availableData().level = level;
                     checkComplete(con);
                 }
             });
@@ -130,32 +144,41 @@ public class StartIngameGui extends ParentableAbstractGui {
         connection.sendPacket(new PacketHello());
     }
 
+    @Override
+    public void onClose() throws GameException {
+        if (connection != null) {
+            connection.cleanup();
+        }
+        if (server != null) {
+            server.stop();
+        }
+    }
+
     private void checkComplete(Connection connection) {
-        if (lobby.availableData().complete()) {
+        if (game.availableData().complete()) {
             connection.sendPacket(new PacketReadyToPlay());
             handshakeFuture.complete(null);
         }
     }
 
     protected void start() throws GameException {
-        Lobby l = orbits.currentLobby();
+        System.out.println(1);
+        Game l = orbits.currentLobby();
         for (int i = 0; i < players.size(); i++) {
             int id = players.getInt(i);
             PlayerGui pg = playerGuis.get(i);
             LocalPlayer player = new LocalPlayer(id, pg.display.charAt(0));
-            player.color().x(pg.color.x);
-            player.color().y(pg.color.y);
-            player.color().z(pg.color.z);
+            player.color().set(pg.color);
             l.players().add(player);
         }
-        if (server == null) {
-            l.start(orbits);
-        }
-        launcher().guiManager().openGui(startCreateGui());
-    }
-
-    protected IngameGui startCreateGui() throws GameException {
-        return new IngameGui(orbits);
+        System.out.println(1);
+        l.start(orbits);
+        IngameGui ingameGui = new IngameGui(orbits, connection, server, idModifier);
+        connection = null;
+        server = null;
+        System.out.println(1);
+        launcher().guiManager().openGui(ingameGui);
+        System.out.println(1);
     }
 
     @Override
@@ -168,14 +191,16 @@ public class StartIngameGui extends ParentableAbstractGui {
     }
 
     protected void handleCharacter(KeyboardKeybindEvent.CharacterKeybindEvent event) throws GameException {
+        char c = event.character();
         if (players.contains(event.keybind().uniqueId())) {
             connection.sendPacket(new PacketDeletePlayer(event.keybind().uniqueId()));
-        } else if (event.character() != ' ') {
-            connection.sendPacket(new PacketNewPlayer(event.keybind().uniqueId(), event.character()));
+        } else if (c != ' ' && c != '\n' && c != '\r' && c != '\b' && c != '\t' && c != '\f') {
+            connection.sendPacket(new PacketNewPlayer(event.keybind().uniqueId(), c));
         }
     }
 
     protected void removePlayer(int id) {
+        id = id - idModifier;
         int index = players.indexOf(id);
         if (index == -1) return;
         players.removeInt(index);
@@ -190,9 +215,10 @@ public class StartIngameGui extends ParentableAbstractGui {
         removeGUI(pg);
     }
 
-    protected PlayerGui addPlayer(int id, char display, Vector4f color) throws GameException {
+    protected PlayerGui addPlayer(int id, char display, Vector3 color) throws GameException {
+        id = id - idModifier;
         if (display == 0) {
-            remotePlayers.put(id, new Vector3(color.x, color.y, color.z));
+            remotePlayers.put(id, color);
             return null;
         }
         players.add(id);
@@ -216,10 +242,10 @@ public class StartIngameGui extends ParentableAbstractGui {
     }
 
     protected static class PlayerGui extends ParentableAbstractGui {
-        protected final Vector4f color;
+        protected final Vector3 color;
         protected final String display;
 
-        public PlayerGui(OrbitsGame orbits, String display, Vector4f color) throws GameException {
+        public PlayerGui(OrbitsGame orbits, String display, Vector3 color) throws GameException {
             super(orbits.launcher());
             this.color = color;
             this.display = display;
@@ -228,7 +254,7 @@ public class StartIngameGui extends ParentableAbstractGui {
             colorGui.yProperty().bind(yProperty());
             colorGui.widthProperty().bind(widthProperty());
             colorGui.heightProperty().bind(heightProperty());
-            colorGui.color().set(color.x, color.y, color.z, color.w);
+            colorGui.color().set(color.x(), color.y(), color.z(), 1);
             addGUI(colorGui);
             TextGui textGui = launcher().guiManager().createGui(TextGui.class);
             textGui.xProperty().bind(xProperty());

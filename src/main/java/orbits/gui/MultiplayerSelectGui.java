@@ -2,11 +2,13 @@ package orbits.gui;
 
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
+import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
 import orbits.server.network.NetworkServer;
+import orbits.server.network.NetworkServerUtil;
 
 public class MultiplayerSelectGui extends ParentableAbstractGui {
 
@@ -27,12 +29,26 @@ public class MultiplayerSelectGui extends ParentableAbstractGui {
                 NetworkServer server = new NetworkServer(orbits, level);
                 server.start();
                 Threads.await(server.startFuture());
-                launcher().guiManager().openGui(new StartIngameGui(orbits, server.connection(), server));
+                Connection con = NetworkServerUtil.connect(launcher(), server.serverId());
+                if (con == null) {
+                    server.stop();
+                    return;
+                }
+                launcher().guiManager().openGui(new StartIngameGui(orbits, con, server));
             });
             launcher().guiManager().openGui(levelSelectGui);
         });
         ((ButtonGui.Simple.TextForeground) buttonGui.foreground().value()).textGui().text().value(Component.text("Create"));
         addGUI(buttonGui);
+
+        ButtonGui back = launcher().guiManager().createGui(ButtonGui.class);
+        back.xProperty().bind(xProperty().add(10));
+        back.yProperty().bind(yProperty().add(heightProperty()).subtract(10).subtract(back.heightProperty()));
+        back.heightProperty().bind(heightProperty().divide(14));
+        back.widthProperty().bind(back.heightProperty().multiply(3));
+        ((ButtonGui.Simple.TextForeground) back.foreground().value()).textGui().text().value(Component.text("Back"));
+        back.onButtonPressed(event -> launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits)));
+        addGUI(back);
 
         buttonGui = launcher().guiManager().createGui(ButtonGui.class);
         buttonGui.xProperty().bind(xProperty().add(widthProperty().subtract(buttonGui.widthProperty()).divide(2)));

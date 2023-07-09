@@ -6,7 +6,6 @@ import gamelauncher.engine.plugin.Plugin;
 import gamelauncher.engine.plugin.Plugin.GamePlugin;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.Key;
-import gamelauncher.engine.util.logging.Logger;
 import orbits.settings.OrbitsSettingSectionInsertion;
 
 import java.util.Locale;
@@ -42,7 +41,6 @@ public class Orbits extends Plugin {
 //                }
             };
         });
-        Logger.asyncLogStream().async(false);
         new OrbitsSettingSectionInsertion(launcher().eventManager()).register(launcher());
         game = new OrbitsGame(this);
         launcher().languageManager().language(Locale.ENGLISH).load(new Key(this, "languages/en.json"));

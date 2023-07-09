@@ -4,10 +4,8 @@ import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.network.packet.Packet;
 import gamelauncher.engine.network.packet.PacketEncoder;
 import gamelauncher.engine.network.packet.PacketHandler;
-import gamelauncher.netty.standalone.packet.s2c.PacketClientConnected;
-import gamelauncher.netty.standalone.packet.s2c.PacketClientDisconnected;
-import gamelauncher.netty.standalone.packet.s2c.PacketPayloadInC2S;
-import gamelauncher.netty.standalone.packet.s2c.PacketPayloadInS2C;
+import gamelauncher.engine.util.GameException;
+import gamelauncher.netty.standalone.packet.s2c.*;
 
 import java.util.Collection;
 import java.util.Map;
@@ -30,6 +28,7 @@ public abstract class AbstractServerWrapperConnection extends WrapperConnection 
         handle.addHandler(PacketPayloadInC2S.class, (con, packet) -> {
             ReceiverConnection ccon = clientConnections.get(packet.client);
             Packet p = ServerUtils.receivePayload(encoder, con, packet.data);
+            ccon.receivePacket(packet);
             serverReceivePacket(ccon, p);
         });
         handle.addHandler(PacketClientConnected.class, (con, packet) -> {
@@ -39,6 +38,15 @@ public abstract class AbstractServerWrapperConnection extends WrapperConnection 
         handle.addHandler(PacketClientDisconnected.class, (con, packet) -> {
             Connection ccon = clientConnections.remove(packet.id);
             serverClientDisconnected(ccon);
+        });
+        cleanupFuture().thenRun(() -> {
+            for (ReceiverConnection c : clientConnections.values()) {
+                try {
+                    c.cleanup();
+                } catch (GameException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
 
@@ -56,14 +64,24 @@ public abstract class AbstractServerWrapperConnection extends WrapperConnection 
                 }
             }
         });
+        handle.addHandler(PacketKicked.class, (con, packet) -> {
+            try {
+                cleanup();
+            } catch (GameException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     protected void serverClientConnected(Connection ccon) {
-
     }
 
     protected void serverClientDisconnected(Connection ccon) {
-
+        try {
+            ccon.cleanup();
+        } catch (GameException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void serverReceivePacket(Connection ccon, Packet packet) {

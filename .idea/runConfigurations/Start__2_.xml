@@ -1,10 +1,13 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Start (2)" type="Application" factoryName="Application" singleton="true">
     <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
-    <option name="MAIN_CLASS_NAME" value="orbits.lwjgl.Start" />
+    <option name="MAIN_CLASS_NAME" value="gamelauncher.lwjgl.Start" />
     <module name="Orbits.lwjgl.main" />
-    <option name="VM_PARAMETERS" value="-Ddebug=true -DcalculateThreadStacks=true -Djansi.passthrough=true -ea" />
+    <option name="PROGRAM_PARAMETERS" value="internalPlugin:orbits.Orbits" />
+    <option name="VM_PARAMETERS" value="-Dgamelauncher.debug=true -Djansi.passthrough=true -ea -Xmx128M" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run/2/" />
-    <method v="2" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>

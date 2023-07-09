@@ -1,27 +1,29 @@
 package orbits;
 
+import de.dasbabypixel.api.property.Property;
 import gamelauncher.engine.event.EventHandler;
 import gamelauncher.engine.event.events.LauncherInitializedEvent;
 import gamelauncher.engine.event.events.gui.GuiOpenEvent;
-import gamelauncher.engine.game.Game;
 import gamelauncher.engine.gui.GuiDistribution;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.render.Framebuffer;
+import gamelauncher.engine.settings.Setting;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import orbits.data.LevelStorage;
 import orbits.gui.CustomGui;
 import orbits.gui.OrbitsPressToPlay;
 import orbits.gui.TextureStorage;
-import orbits.lobby.Lobby;
+import orbits.ingame.Game;
 import orbits.network.PacketHandlers;
+import orbits.settings.OrbitsSettingSection;
 
-public class OrbitsGame extends Game {
+public class OrbitsGame extends gamelauncher.engine.game.Game {
     private final Orbits orbits;
     private final PacketHandlers packetHandlers = new PacketHandlers(this);
     private final TextureStorage textureStorage;
-    private Lobby lobby;
+    private Game game;
     private volatile LevelStorage levelStorage;
 
     public OrbitsGame(Orbits orbits) throws GameException {
@@ -35,12 +37,19 @@ public class OrbitsGame extends Game {
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
         packetHandlers().registerHandlers();
-        launcher().frame().fullscreen().value(true);
+        Setting<Boolean> fullscreen = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS).getSetting(OrbitsSettingSection.FULLSCREEN);
+        launcher().frame().fullscreen().value(fullscreen.getValue());
+        launcher().frame().fullscreen().addListener(Property::value);
+        launcher().frame().fullscreen().addListener((p, o, n) -> {
+            launcher().gameThread().submit(() -> {
+                fullscreen.setValue(n);
+                launcher().saveSettings();
+            });
+        });
     }
 
     @Override
     protected void close0() throws GameException {
-        packetHandlers().unregisterHandlers();
         Threads.await(textureStorage.cleanup());
     }
 
@@ -62,19 +71,19 @@ public class OrbitsGame extends Game {
         return packetHandlers;
     }
 
-    public Lobby currentLobby() {
+    public Game currentLobby() {
         if (Thread.currentThread() != launcher().gameThread())
             throw new RuntimeException("May only access this from GameThread");
-        return lobby;
+        return game;
     }
 
     public TextureStorage textureStorage() {
         return textureStorage;
     }
 
-    public void currentLobby(Lobby lobby) {
+    public void currentLobby(Game game) {
         if (Thread.currentThread() != launcher().gameThread())
             throw new RuntimeException("May only access this from GameThread");
-        this.lobby = lobby;
+        this.game = game;
     }
 }

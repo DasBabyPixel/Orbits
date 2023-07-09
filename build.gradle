@@ -10,10 +10,6 @@ tasks.wrapper {
     gradleVersion = 'latest'
 }
 
-java.toolchain {
-    languageVersion.set(JavaLanguageVersion.of(11))
-    vendor = JvmVendorSpec.ADOPTIUM
-}
 mkdir "run"
 mkdir "run/2"
 mkdir "run/3"
@@ -26,6 +22,10 @@ dependencies {
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+        vendor = JvmVendorSpec.ADOPTIUM
+    }
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
 }

@@ -3,51 +3,36 @@ package orbits.data;
 import gamelauncher.engine.data.DataBuffer;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
-import orbits.lobby.Lobby;
+import orbits.data.level.Level;
+import orbits.ingame.Game;
 
 public class Player extends Ball {
 
     public static final float DODGE_SPEED = 2;
     public static final long DODGE_DURATION = 800;
     private final DoubleList positions = new DoubleArrayList();
-    public Orbit currentOrbit;
-    public boolean orbiting = false;
-    public double orbitingTheta;
+    private Orbit currentOrbit;
+    private int currentOrbitsId = -1;
+    private boolean orbiting = false;
+    private double orbitingTheta;
     private float dodgeMultiplier = 1;
     private long dodgeMultiplierApplied = Long.MAX_VALUE;
-    private Ball trailEnd;
-    private int trail;
 
     public DoubleList positions() {
         return positions;
     }
 
-    public int trail() {
-        return trail;
-    }
-
     public void addTrail(Ball ball) {
-        trail++;
         ball.pull(null);
-        if (trailEnd != null) {
-            trailEnd.pull(ball);
-            ball.prev(trailEnd);
-        } else {
-            pull(ball);
-            ball.prev(this);
-        }
-        trailEnd = ball;
+        super.trailEnd().pull(ball);
         ball.ownerId(entityId());
         ball.color().set(color());
     }
 
     public Ball removeTrail() {
-        Ball b = trailEnd;
+        Ball b = trailEnd();
         if (b == null) return null;
-        trailEnd = trailEnd.prev();
-        b.prev(null);
-        trailEnd.pull(null);
-        if (trailEnd == this) trailEnd = null;
+        b.prev().pull(null);
         b.ownerId(0);
         return b;
     }
@@ -55,7 +40,9 @@ public class Player extends Ball {
     @Override
     public void write(DataBuffer buffer) {
         super.write(buffer);
-        buffer.writeInt(trail);
+        buffer.writeByte((byte) (orbiting ? 1 : 0));
+        buffer.writeDouble(orbitingTheta);
+        buffer.writeInt(currentOrbitsId);
         buffer.writeFloat(dodgeMultiplier);
         buffer.writeLong(dodgeMultiplierApplied);
     }
@@ -63,7 +50,9 @@ public class Player extends Ball {
     @Override
     public void read(DataBuffer buffer) {
         super.read(buffer);
-        trail = buffer.readInt();
+        orbiting = buffer.readByte() == 1;
+        orbitingTheta = buffer.readDouble();
+        currentOrbitsId = buffer.readInt();
         dodgeMultiplier = buffer.readFloat();
         dodgeMultiplierApplied = buffer.readLong();
     }
@@ -76,25 +65,59 @@ public class Player extends Ball {
         return dodgeMultiplierApplied;
     }
 
-    public void dodgeMultiplier(Lobby lobby, float dodgeMultiplier) {
+    public void dodgeMultiplier(Game game, float dodgeMultiplier) {
         this.dodgeMultiplier = dodgeMultiplier;
         if (body != null) {
             body.getLinearVelocity().normalize();
-            body.getLinearVelocity().multiply(calculateSpeed(lobby));
-            updateMotion(lobby);
+            body.getLinearVelocity().multiply(calculateSpeed(game));
+            updateMotion(game);
         }
     }
 
+    public int currentOrbitsId() {
+        return currentOrbitsId;
+    }
+
+    public Orbit currentOrbit() {
+        return currentOrbit;
+    }
+
+    public void currentOrbit(Level level, int id) {
+        this.currentOrbitsId = id;
+        this.currentOrbit = level.orbits().get(id);
+    }
+
+    public void currentOrbit(Level level, Orbit currentOrbit) {
+        if (currentOrbit != null) {
+            this.currentOrbitsId = level.orbits().indexOf(currentOrbit);
+            this.currentOrbit = currentOrbit;
+        } else {
+            this.currentOrbit = null;
+            this.currentOrbitsId = -1;
+        }
+    }
+
+    public boolean orbiting() {
+        return orbiting;
+    }
+
+    public double orbitingTheta() {
+        return orbitingTheta;
+    }
+
+    public void orbiting(boolean orbiting, double theta) {
+        if (orbiting) body.setLinearVelocity(0, 0);
+        this.orbiting = orbiting;
+        this.orbitingTheta = theta;
+    }
+
     public Ball trailEnd() {
-        return trailEnd;
+        Ball t = super.trailEnd();
+        return t == this ? null : t;
     }
 
-    public void trailEnd(Ball trailEnd) {
-        this.trailEnd = trailEnd;
-    }
-
-    public float calculateSpeed(Lobby lobby) {
-        return lobby.speed() * dodgeMultiplier;
+    public float calculateSpeed(Game game) {
+        return game.speed() * dodgeMultiplier;
     }
 
     public void dodgeMultiplierApplied(long dodgeMultiplierApplied) {

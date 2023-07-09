@@ -2,7 +2,6 @@ package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.data.DataSerializable;
-import org.dyn4j.geometry.Vector2;
 
 import java.util.Objects;
 
@@ -51,6 +50,11 @@ public class Position implements DataSerializable {
     public void read(DataBuffer buffer) {
         x = buffer.readDouble();
         y = buffer.readDouble();
+    }
+
+    public void set(Position other) {
+        x = other.x;
+        y = other.y;
     }
 
     @Override

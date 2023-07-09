@@ -17,13 +17,16 @@ shadowJar {
     archiveBaseName.set('shadow')
     archiveClassifier.set('')
     archiveVersion.set('')
-    minimize()
     minimize {
-        exclude dependency('org.bouncycastle:.*:.*')
+        exclude(dependency('org.bouncycastle:.*:.*'))
+        exclude(project(':'))
     }
     manifest {
         attributes.put('Main-Class', 'orbits.lwjgl.Start')
     }
+}
+ext {
+    launch4jJVM = ['-Dgamelauncher.name=Orbits', '-Dgamelauncher.game_directory=application', '-Dgamelauncher.use_gles=false']
 }
 
 launch4j {
@@ -33,7 +36,8 @@ launch4j {
     mainClassName = 'orbits.lwjgl.Start'
     icon = "${projectDir}/src/main/resources/orbits.ico"
     jreMinVersion = '11'
-    jvmOptions = ['-Dgamelauncher.name=GameLauncherTestEXE', '-Dgamelauncher.game_directory=application']
+    bundledJrePath = 'java'
+    jvmOptions = launch4jJVM
 }
 
 static File launch4jOutput(Launch4jLibraryTask task) {
@@ -44,6 +48,7 @@ tasks.register('createDebugExe', Launch4jLibraryTask) {
     group = Launch4jPlugin.LAUNCH4J_GROUP
     outfile = "${project.name}-debug.exe"
     headerType = 'console'
+    jvmOptions.addAll launch4jJVM
     jvmOptions.add '-Dgamelauncher.debug=true'
 }
 

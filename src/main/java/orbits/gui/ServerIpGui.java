@@ -4,28 +4,17 @@ import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.TextGui;
 import gamelauncher.engine.network.Connection;
-import gamelauncher.engine.network.packet.Packet;
-import gamelauncher.engine.network.packet.PacketHandler;
-import gamelauncher.engine.settings.SettingSection;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.logging.Logger;
 import gamelauncher.engine.util.text.Component;
-import gamelauncher.netty.standalone.packet.c2s.PacketConnectToServer;
-import java8.util.concurrent.CompletableFuture;
 import orbits.OrbitsGame;
-import orbits.network.AbstractServerWrapperConnection;
-import orbits.network.ServerUtils;
-import orbits.settings.OrbitsSettingSection;
+import orbits.server.network.NetworkServerUtil;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class ServerIpGui extends ParentableAbstractGui {
     private static final Logger logger = Logger.logger();
@@ -53,45 +42,9 @@ public class ServerIpGui extends ParentableAbstractGui {
     }
 
     private void connect() throws UnknownHostException, GameException, URISyntaxException {
-        SettingSection section = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS);
-        Connection connection = launcher().networkClient().connect(new URI(section.<String>getSetting(OrbitsSettingSection.SERVER_URL).getValue()));
-        Connection.State state = connection.ensureState(Connection.State.CONNECTED).timeoutAfter(5, TimeUnit.SECONDS).await();
-        if (state == Connection.State.CONNECTED) {
-            CompletableFuture<Integer> connectFuture = new CompletableFuture<>();
-            PacketHandler<PacketConnectToServer.Response> responseHandler = (con, packet) -> connectFuture.complete(packet.code);
-            connection.addHandler(PacketConnectToServer.Response.class, responseHandler);
-            connection.sendPacket(new PacketConnectToServer(ip));
-            try {
-                int code = connectFuture.get(5, TimeUnit.SECONDS);
-                if (code != 1) {
-                    connection.cleanup();
-                    logger.error("Failed to connect: " + code);
-                    return;
-                }
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                logger.error(e);
-                connection.cleanup();
-                return;
-            }
-
-            launcher().guiManager().openGui(new StartIngameGui(orbits, new AbstractServerWrapperConnection(connection) {
-                {
-                    loadClient();
-                }
-
-                @Override
-                public void sendPacket(Packet packet) {
-                    ServerUtils.clientSendPacket(encoder, connection, packet);
-                }
-
-                @Override
-                public CompletableFuture<Void> sendPacketAsync(Packet packet) {
-                    return ServerUtils.clientSendPacketAsync(encoder, connection, packet);
-                }
-            }, null));
-        } else {
-            connection.cleanup();
-            launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits));
+        Connection connection = NetworkServerUtil.connect(launcher(), ip);
+        if (connection != null) {
+            launcher().guiManager().openGui(new StartIngameGui(orbits, connection, null));
         }
     }
 

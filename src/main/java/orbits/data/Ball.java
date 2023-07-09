@@ -2,7 +2,7 @@ package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
 import gamelauncher.engine.render.GameItem;
-import orbits.lobby.Lobby;
+import orbits.ingame.Game;
 
 public class Ball extends Entity {
     private final Position position = new Position(0, 0);
@@ -10,6 +10,7 @@ public class Ball extends Entity {
     private final Vector3 color = new Vector3();
     public GameItem ballItem;
     public boolean projectile = false;
+    private Ball trailEnd = this;
     private Ball prev;
     private Ball pull;
     private int ownerId;
@@ -18,8 +19,8 @@ public class Ball extends Entity {
         return motion;
     }
 
-    public void updateMotion(Lobby lobby) {
-        motion.x(lobby.toLocalSpaceX(body.getLinearVelocity().x));
+    public void updateMotion(Game game) {
+        motion.x(game.toLocalSpaceX(body.getLinearVelocity().x));
         motion.y(body.getLinearVelocity().y);
     }
 
@@ -50,19 +51,40 @@ public class Ball extends Entity {
     }
 
     public Ball pull() {
+        if (pull != null && pull.prev != this) System.out.println("OUT OF SYNC " + entityId());
         return pull;
     }
 
     public void pull(Ball pull) {
+        if (this.pull != null && this.pull.prev != null) {
+            this.pull.prev = null;
+        }
         this.pull = pull;
+        if (pull != null) {
+            if (pull.prev != null) {
+                pull.prev.pull = null;
+            }
+            pull.prev = this;
+            trailEnd = pull.trailEnd;
+        } else {
+            trailEnd = this;
+        }
+        if (pull != null && pull.prev != this) System.out.println("OUT OF SYNC " + entityId());
+        if (prev != null && prev.pull != this) System.out.println("OUT OF SYNC " + entityId());
+        Ball b = prev;
+        while (b != null) {
+            b.trailEnd = trailEnd;
+            b = b.prev;
+        }
+    }
+
+    public Ball trailEnd() {
+        return trailEnd;
     }
 
     public Ball prev() {
+        if (prev != null && prev.pull != this) System.out.println("OUT OF SYNC " + entityId());
         return prev;
-    }
-
-    public void prev(Ball prev) {
-        this.prev = prev;
     }
 
     public int ownerId() {

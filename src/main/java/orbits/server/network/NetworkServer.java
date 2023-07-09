@@ -123,7 +123,7 @@ public class NetworkServer extends OrbitsServer {
 
     @Override
     protected void stop0() throws GameException {
-        if (rawConnection != null) rawConnection.cleanup();
+        if (rawConnection != null && !rawConnection.cleanedUp()) rawConnection.cleanup();
         super.stop0();
     }
 
@@ -147,6 +147,11 @@ public class NetworkServer extends OrbitsServer {
             this.serverId = serverId;
             this.target = target;
             this.encoder = encoder;
+        }
+
+        @Override
+        protected boolean autoTrack() {
+            return false;
         }
 
         @Override

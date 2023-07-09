@@ -4,6 +4,7 @@ import de.dasbabypixel.api.property.NumberValue;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.util.GameException;
+import gamelauncher.engine.util.concurrent.Threads;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
 import orbits.server.InternalServer;
@@ -46,6 +47,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
             levelSelectGui.levelSelector().value(level -> {
                 InternalServer server = new InternalServer(orbits, level);
                 server.start();
+                Threads.await(server.startFuture());
                 launcher().guiManager().openGui(new StartIngameGui(orbits, server.clientConnection(), server));
             });
             launcher().guiManager().openGui(levelSelectGui);

@@ -3,6 +3,7 @@ package orbits.gui;
 import de.dasbabypixel.api.property.NumberValue;
 import gamelauncher.engine.gui.ParentableAbstractGui;
 import gamelauncher.engine.gui.guis.ColorGui;
+import gamelauncher.engine.network.Connection;
 import gamelauncher.engine.render.ContextProvider;
 import gamelauncher.engine.render.DrawContext;
 import gamelauncher.engine.render.GameItem;
@@ -23,24 +24,133 @@ import orbits.data.Ball;
 import orbits.data.Entity;
 import orbits.data.LocalPlayer;
 import orbits.data.Player;
-import orbits.lobby.Lobby;
+import orbits.ingame.Game;
+import orbits.network.client.PacketJoined;
+import orbits.network.client.PacketPause;
+import orbits.network.client.PacketPress;
+import orbits.network.server.*;
+import orbits.server.OrbitsServer;
+import org.dyn4j.dynamics.Body;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class IngameGui extends ParentableAbstractGui {
     protected final OrbitsGame orbits;
-    protected final Lobby lobby;
+    protected final Game game;
     protected final LevelGui levelGui;
     protected final EntityRenderer entityRenderer;
     protected final Int2ObjectMap<LocalPlayer> keybindToPlayer = new Int2ObjectOpenHashMap<>();
     protected final Texture ballTexture;
+    protected final @Nullable OrbitsServer server;
+    protected final int idModifier;
+    protected Connection connection;
     protected boolean paused = false;
 
-    public IngameGui(OrbitsGame orbits) throws GameException {
+    public IngameGui(OrbitsGame orbits, Connection connection, @Nullable OrbitsServer server, int idModifier) throws GameException {
         super(orbits.launcher());
         this.orbits = orbits;
-        lobby = orbits.currentLobby();
+        this.server = server;
+        this.idModifier = idModifier;
+        this.connection = connection;
+        game = orbits.currentLobby();
+        connection.addHandler(PacketEntityData.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                Int2ObjectMap<Entity> entities = game.entities();
+                if (!entities.containsKey(packet.entity.entityId())) {
+                    entities.put(packet.entity.entityId(), packet.entity);
+                    if (packet.entity instanceof LocalPlayer) {
+                        LocalPlayer lp = (LocalPlayer) packet.entity;
+                        int kid = lp.keybindId() - idModifier;
+                        if (keybindToPlayer.containsKey(kid)) {
+                            LocalPlayer old = keybindToPlayer.get(kid);
+                            lp.display(old.display());
+                            keybindToPlayer.put(kid, lp);
+                        }
+                    }
+                    Body body = game.setupBody(packet.entity);
+                    game.physicsEngine().world().addBody(body);
+                    game.setMotionToWorld(packet.entity);
+                } else {
+                    Ball b = (Ball) entities.get(packet.entity.entityId());
+                    b.position().set(packet.entity.position());
+                    b.color().set(packet.entity.color());
+                    b.motion().set(packet.entity.motion());
+                    game.setMotionToWorld(b);
+                    game.setPositionToWorld(b);
+                    if (b instanceof Player && packet.entity instanceof Player) {
+                        Player p = (Player) b;
+                        Player n = (Player) packet.entity;
+                        p.dodgeMultiplier(game, n.dodgeMultiplier());
+                        p.dodgeMultiplierApplied(n.dodgeMultiplierApplied());
+                        p.currentOrbit(game.level(), n.currentOrbitsId());
+                        p.orbiting(n.orbiting(), n.orbitingTheta());
+                    }
+                }
+            });
+        });
+        connection.addHandler(PacketRemoveTrail.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                Entity e = game.entities().get(packet.entityId);
+                Ball t = (Ball) game.entities().get(packet.trailId);
+                if (e instanceof Player) {
+                    Player p = (Player) e;
+                    t.prev().pull(t.pull());
+                    t.pull(null);
+                    t.ownerId(0);
+                    p.updateMotion(game);
+                    game.setupProjectile(p, t);
+                    System.out.println("shoot");
+                } else {
+                    System.out.println("Player no player????");
+                }
+            }).exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+            });
+        });
+        connection.addHandler(PacketAddTrail.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                Entity e = game.entities().get(packet.entityId);
+                Ball t = (Ball) game.entities().get(packet.trailId);
+                if (e instanceof Player) {
+                    if (t.prev() != null) {
+                        t.prev().pull(t.pull());
+                        t.pull(null);
+                    }
+                    ((Player) e).addTrail(t);
+                } else {
+                    System.out.println("Entity: " + e + " not a player");
+                }
+            });
+        });
+        connection.addHandler(PacketEntityRemove.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                Int2ObjectMap<Entity> entities = game.entities();
+                Entity entity = entities.remove(packet.entityId);
+                entity.entityId(0);
+                game.physicsEngine().world().removeBody(entity.body);
+                launcher().frame().renderThread().submit(() -> {
+                    if (entity.model != null) {
+                        entity.model.cleanup();
+                    }
+                });
+            });
+        });
+        connection.cleanupFuture().thenRun(() -> {
+            if (initialized()) {
+                launcher().gameThread().submit(() -> {
+                    this.connection = null;
+                    launcher().guiManager().openGui(new OrbitsMainScreenGui(orbits));
+                });
+            }
+        });
+        connection.addHandler(PacketPaused.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                paused = packet.paused;
+            });
+        });
 
         ColorGui background = launcher().guiManager().createGui(ColorGui.class);
         background.color().set(.5F, .5F, .5F, 1);
@@ -50,7 +160,7 @@ public class IngameGui extends ParentableAbstractGui {
         background.heightProperty().bind(heightProperty());
         addGUI(background);
 
-        levelGui = new LevelGui(orbits, lobby.level(), false);
+        levelGui = new LevelGui(orbits, game.level(), false);
         levelGui.widthProperty().bind(widthProperty());
         levelGui.heightProperty().bind(heightProperty());
         levelGui.xProperty().bind(xProperty());
@@ -63,22 +173,29 @@ public class IngameGui extends ParentableAbstractGui {
         entityRenderer.yProperty().bind(levelGui.realY());
         addGUI(entityRenderer);
         ballTexture = orbits.textureStorage().texture("ball.png");
-        for (Player player : lobby.players()) {
+        for (Player player : game.players()) {
             if (player instanceof LocalPlayer) {
                 keybindToPlayer.put(((LocalPlayer) player).keybindId(), (LocalPlayer) player);
             }
         }
-        registerKeybindHandler(KeyboardKeybindEvent.CharacterKeybindEvent.class, event -> {
-            if (event.character() != ' ') return;
-            paused = !paused;
-        });
+        if (server != null) {
+            registerKeybindHandler(KeyboardKeybindEvent.CharacterKeybindEvent.class, event -> {
+                if (event.character() != ' ') return;
+                connection.sendPacket(new PacketPause());
+            });
+        }
+    }
+
+    @Override
+    protected void doInit() throws GameException {
+        connection.sendPacket(new PacketJoined());
     }
 
     @Override
     protected boolean doHandle(KeybindEvent entry) {
         LocalPlayer p = keybindToPlayer.get(entry.keybind().uniqueId());
         if (p != null) {
-            lobby.tap(p);
+            connection.sendPacket(new PacketPress(entry.keybind().uniqueId()));
         }
         return true;
     }
@@ -86,9 +203,20 @@ public class IngameGui extends ParentableAbstractGui {
     @Override
     protected void doUpdate() throws GameException {
         if (!paused) {
-            lobby.physicsEngine().tick();
+            game.physicsEngine().tick();
             redraw();
         }
+    }
+
+    @Override
+    public void onClose() throws GameException {
+        if (server != null) {
+            server.stop();
+        }
+        if (connection != null) {
+            connection.cleanup();
+        }
+        super.onClose();
     }
 
     private class EntityRenderer extends ParentableAbstractGui {
@@ -108,7 +236,7 @@ public class IngameGui extends ParentableAbstractGui {
         @Override
         protected void doCleanup() throws GameException {
             launcher().contextProvider().freeContext(context, ContextProvider.ContextType.HUD);
-            for (Entity entity : lobby.entities().values()) {
+            for (Entity entity : game.entities().values()) {
                 if (entity.model != null) {
                     entity.model.cleanup();
                     entity.model = null;
@@ -120,7 +248,7 @@ public class IngameGui extends ParentableAbstractGui {
 
         @Override
         protected boolean doRender(float mouseX, float mouseY, float partialTick) throws GameException {
-            for (Entity entity : lobby.entities().values()) {
+            for (Entity entity : game.entities().values()) {
                 if (entity instanceof Ball) {
                     Ball ball = (Ball) entity;
                     if (entity.model == null) {
@@ -166,7 +294,7 @@ public class IngameGui extends ParentableAbstractGui {
                     }
                     entity.gameItem.position().x.number(ball.position().x() * width());
                     entity.gameItem.position().y.number(ball.position().y() * height());
-                    context.drawModel(entity.model, x(), y(), 0, 0, 0, 0, height() * lobby.playerSize() * lobby.scale(), height() * lobby.playerSize() * lobby.scale(), 0);
+                    context.drawModel(entity.model, x(), y(), 0, 0, 0, 0, height() * game.playerSize() * game.scale(), height() * game.playerSize() * game.scale(), 0);
                 }
             }
             return super.doRender(mouseX, mouseY, partialTick);
