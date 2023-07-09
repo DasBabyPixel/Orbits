@@ -48,7 +48,7 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
                 InternalServer server = new InternalServer(orbits, level);
                 server.start();
                 Threads.await(server.startFuture());
-                launcher().guiManager().openGui(new StartIngameGui(orbits, server.clientConnection(), server));
+                launcher().guiManager().openGui(new StartIngameGui.Simple(orbits, server.clientConnection(), server));
             });
             launcher().guiManager().openGui(levelSelectGui);
         });
@@ -68,41 +68,5 @@ public class OrbitsMainScreenGui extends ParentableAbstractGui {
         });
         addGUI(mapEditor);
 
-//        TextureGui gui = launcher().guiManager().createGui(TextureGui.class);
-//        gui.widthProperty().bind(widthProperty());
-//        gui.heightProperty().bind(heightProperty());
-//        gui.xProperty().bind(xProperty());
-//        gui.yProperty().bind(yProperty());
-//
-//        gui.texture().uploadAsync(launcher().resourceLoader()
-//                        .resource(launcher.assets().resolve("pressToPlay.png")).newResourceStream())
-//                .thenRun(() -> {
-//                    gui.widthProperty().unbind();
-//                    gui.heightProperty().unbind();
-//                    gui.xProperty().unbind();
-//                    gui.yProperty().unbind();
-//                    float aspectRatio = gui.texture().width().floatValue() / gui.texture().height()
-//                            .floatValue();
-//                    gui.widthProperty()
-//                            .bind(widthProperty().min(heightProperty().multiply(aspectRatio)));
-//                    gui.heightProperty()
-//                            .bind(heightProperty().min(widthProperty().divide(aspectRatio)));
-//                    gui.xProperty().bind(xProperty().add(
-//                            widthProperty().subtract(gui.widthProperty()).divide(2)));
-//                    gui.yProperty().bind(yProperty().add(
-//                            heightProperty().subtract(gui.heightProperty()).divide(2)));
-//
-//                    redraw();
-//                });
-//        GUIs.add(gui);
     }
-//    @Override
-//    protected boolean doHandle(KeybindEvent event) throws GameException {
-//        if (event instanceof MouseButtonKeybindEvent) {
-//            MouseButtonKeybindEvent mbke = ((MouseButtonKeybindEvent) event);
-//            if (mbke.type() == Type.PRESS)
-//                launcher().keyboardVisible(!launcher().keyboardVisible());
-//        }
-//        return super.doHandle(event);
-//    }
 }

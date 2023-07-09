@@ -34,7 +34,7 @@ public class MultiplayerSelectGui extends ParentableAbstractGui {
                     server.stop();
                     return;
                 }
-                launcher().guiManager().openGui(new StartIngameGui(orbits, con, server));
+                launcher().guiManager().openGui(new StartIngameGui.Simple(orbits, con, server));
             });
             launcher().guiManager().openGui(levelSelectGui);
         });
@@ -55,7 +55,7 @@ public class MultiplayerSelectGui extends ParentableAbstractGui {
         buttonGui.yProperty().bind(yProperty().add(heightProperty().subtract(buttonGui.heightProperty()).divide(2)).add(buttonGui.heightProperty()));
         buttonGui.widthProperty().bind(widthProperty().divide(2));
         buttonGui.heightProperty().bind(heightProperty().divide(4));
-        buttonGui.onButtonPressed(event -> launcher().guiManager().openGui(new ServerIpGui(orbits)));
+        buttonGui.onButtonPressed(event -> launcher().guiManager().openGuiByClass(ServerIpGui.class));
         ((ButtonGui.Simple.TextForeground) buttonGui.foreground().value()).textGui().text().value(Component.text("Join"));
         addGUI(buttonGui);
     }

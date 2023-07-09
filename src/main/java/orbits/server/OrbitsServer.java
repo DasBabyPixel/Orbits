@@ -21,6 +21,7 @@ import orbits.network.server.*;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class OrbitsServer {
 
@@ -29,6 +30,7 @@ public abstract class OrbitsServer {
     private static final Key KEY_IDS = new Key("orbits", "ids");
     private static final Key KEY_ID = new Key("orbits", "id");
     private static final Key KEY_READY = new Key("orbits", "ready");
+    protected final AtomicBoolean running = new AtomicBoolean(false);
     protected final Random random = new Random(0);
     protected final GameLauncher launcher;
     protected final GameThread thread;
@@ -97,8 +99,10 @@ public abstract class OrbitsServer {
     }
 
     public void start() {
-        thread.submit(this::start0);
-        thread.start();
+        if (running.compareAndSet(false, true)) {
+            thread.submit(this::start0);
+            thread.start();
+        }
     }
 
     protected void start0() throws GameException {
@@ -233,10 +237,12 @@ public abstract class OrbitsServer {
     }
 
     protected void stop0() throws GameException {
-        logger.info("Stopping OrbitsServer");
-        if (!startFuture.isDone()) startFuture.completeExceptionally(new GameException("Server stopped"));
-        shutdownFuture.complete(null);
-        thread.cleanup();
+        if (running.compareAndSet(true, false)) {
+            logger.info("Stopping OrbitsServer");
+            if (!startFuture.isDone()) startFuture.completeExceptionally(new GameException("Server stopped"));
+            shutdownFuture.complete(null);
+            thread.cleanup();
+        }
     }
 
     public void stop() {

@@ -1,7 +1,7 @@
 package orbits;
 
-import gamelauncher.engine.gui.GuiDistribution;
-import gamelauncher.engine.gui.guis.TextGui;
+import gamelauncher.engine.gui.GuiConstructorTemplate;
+import gamelauncher.engine.gui.GuiConstructorTemplates;
 import gamelauncher.engine.plugin.Plugin;
 import gamelauncher.engine.plugin.Plugin.GamePlugin;
 import gamelauncher.engine.util.GameException;
@@ -20,27 +20,13 @@ public class Orbits extends Plugin {
 
     @Override
     public void onEnable() throws GameException {
-        launcher().frame().icon().value(launcher().imageDecoder().decodeIcon(launcher().resourceLoader().resource(launcher().assets().resolve("orbits").resolve("textures").resolve("orbits.ico")).newResourceStream()));
-        launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, TextGui.class, () -> {
-            return new TextGui.Simple(launcher()) {
-//                @Override
-//                protected void doInit() throws GameException {
-//                }
-//
-//                @Override
-//                protected void preRender(float mouseX, float mouseY, float partialTick) throws GameException {
-//                }
-//
-//                @Override
-//                protected boolean doRender(float mouseX, float mouseY, float partialTick) throws GameException {
-//                    return true;
-//                }
-//
-//                @Override
-//                protected void doCleanup() throws GameException {
-//                }
-            };
+        GuiConstructorTemplates.addDefault(new GuiConstructorTemplate(OrbitsGame.class) {
+            @Override
+            public Object[] arguments() {
+                return new Object[]{game};
+            }
         });
+        launcher().frame().icon().value(launcher().imageDecoder().decodeIcon(launcher().resourceLoader().resource(launcher().assets().resolve("orbits").resolve("textures").resolve("orbits.ico")).newResourceStream()));
         new OrbitsSettingSectionInsertion(launcher().eventManager()).register(launcher());
         game = new OrbitsGame(this);
         launcher().languageManager().language(Locale.ENGLISH).load(new Key(this, "languages/en.json"));

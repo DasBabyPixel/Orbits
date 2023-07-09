@@ -29,6 +29,16 @@ public class OrbitsContactListener extends ContactListenerAdapter<Body> {
         if (b2.getUserData() instanceof Wall) {
             if (game.broadcast != null) game.broadcast.update((Entity) b1.getUserData());
         }
+        end(collision.getBody1(), collision.getBody2());
+    }
+
+    private void end(Body b1, Body b2) {
+        if (b1.getUserData() instanceof Player && b2.getUserData() instanceof Player) {
+            if (game.broadcast != null) {
+                game.broadcast.update((Entity) b1.getUserData());
+                game.broadcast.update((Entity) b2.getUserData());
+            }
+        }
     }
 
     @Override

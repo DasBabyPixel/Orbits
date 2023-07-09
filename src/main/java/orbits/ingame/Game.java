@@ -7,7 +7,6 @@ import orbits.OrbitsGame;
 import orbits.data.*;
 import orbits.data.level.Level;
 import orbits.data.level.StartPosition;
-import orbits.physics.PhysicsEngine;
 import org.dyn4j.collision.Filter;
 import org.dyn4j.dynamics.Body;
 import org.dyn4j.dynamics.BodyFixture;

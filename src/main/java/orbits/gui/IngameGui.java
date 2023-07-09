@@ -10,9 +10,11 @@ import gamelauncher.engine.render.GameItem;
 import gamelauncher.engine.render.model.GlyphStaticModel;
 import gamelauncher.engine.render.model.Model;
 import gamelauncher.engine.render.texture.Texture;
+import gamelauncher.engine.util.DefaultOperatingSystems;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
+import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
 import gamelauncher.engine.util.text.Component;
 import gamelauncher.gles.model.GLESCombinedModelsModel;
 import gamelauncher.gles.model.Texture2DModel;
@@ -78,7 +80,6 @@ public class IngameGui extends ParentableAbstractGui {
                     b.color().set(packet.entity.color());
                     b.motion().set(packet.entity.motion());
                     game.setMotionToWorld(b);
-                    game.setPositionToWorld(b);
                     if (b instanceof Player && packet.entity instanceof Player) {
                         Player p = (Player) b;
                         Player n = (Player) packet.entity;
@@ -86,7 +87,10 @@ public class IngameGui extends ParentableAbstractGui {
                         p.dodgeMultiplierApplied(n.dodgeMultiplierApplied());
                         p.currentOrbit(game.level(), n.currentOrbitsId());
                         p.orbiting(n.orbiting(), n.orbitingTheta());
+                        p.updateMotion(game);
+                        game.setMotionToWorld(b);
                     }
+                    game.setPositionToWorld(b);
                 }
             });
         });
@@ -193,9 +197,15 @@ public class IngameGui extends ParentableAbstractGui {
 
     @Override
     protected boolean doHandle(KeybindEvent entry) {
-        LocalPlayer p = keybindToPlayer.get(entry.keybind().uniqueId());
+        int id = entry.keybind().uniqueId();
+        if (launcher().operatingSystem() == DefaultOperatingSystems.ANDROID) {
+            if (entry instanceof MouseButtonKeybindEvent) {
+                if (((MouseButtonKeybindEvent) entry).type() == MouseButtonKeybindEvent.Type.PRESS) id = 0;
+            }
+        }
+        LocalPlayer p = keybindToPlayer.get(id);
         if (p != null) {
-            connection.sendPacket(new PacketPress(entry.keybind().uniqueId()));
+            connection.sendPacket(new PacketPress(id));
         }
         return true;
     }

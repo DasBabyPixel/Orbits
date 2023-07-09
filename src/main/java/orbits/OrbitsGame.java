@@ -14,6 +14,7 @@ import gamelauncher.engine.util.concurrent.Threads;
 import orbits.data.LevelStorage;
 import orbits.gui.CustomGui;
 import orbits.gui.OrbitsPressToPlay;
+import orbits.gui.ServerIpGui;
 import orbits.gui.TextureStorage;
 import orbits.ingame.Game;
 import orbits.network.PacketHandlers;
@@ -32,6 +33,7 @@ public class OrbitsGame extends gamelauncher.engine.game.Game {
         this.textureStorage = new TextureStorage(this);
         levelStorage = new LevelStorage(this);
         launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, ButtonGui.class, CustomGui.class);
+        launcher().guiManager().registerGuiCreator(GuiDistribution.DEFAULT, ServerIpGui.class);
     }
 
     @Override

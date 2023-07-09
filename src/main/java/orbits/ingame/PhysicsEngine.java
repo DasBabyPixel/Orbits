@@ -1,8 +1,13 @@
-package orbits.physics;
+package orbits.ingame;
 
 import orbits.data.*;
-import orbits.ingame.Game;
+import org.dyn4j.collision.CollisionItem;
+import org.dyn4j.collision.broadphase.CollisionItemBroadphaseDetector;
+import org.dyn4j.collision.broadphase.CollisionItemBroadphaseDetectorAdapter;
+import org.dyn4j.collision.broadphase.DynamicAABBTree;
+import org.dyn4j.collision.broadphase.NullAABBExpansionMethod;
 import org.dyn4j.dynamics.Body;
+import org.dyn4j.dynamics.BodyFixture;
 import org.dyn4j.dynamics.ContinuousDetectionMode;
 import org.dyn4j.dynamics.Settings;
 import org.dyn4j.world.World;
@@ -18,16 +23,20 @@ public class PhysicsEngine {
     private final Random r = new Random();
     private final Game game;
     private final List<Ball> remove = new ArrayList<>();
+    private final double spawnChance = 0.005; // 0.005 default
 
     public PhysicsEngine(Game game) {
         this.game = game;
         world.setGravity(World.ZERO_GRAVITY);
         world.getSettings().setContinuousDetectionMode(ContinuousDetectionMode.BULLETS_ONLY);
-        world.getSettings().setVelocityConstraintSolverIterations(2);
+        world.getSettings().setVelocityConstraintSolverIterations(7);
         world.getSettings().setAtRestDetectionEnabled(true);
         world.getSettings().setMaximumAtRestLinearVelocity(0.005);
-        world.getSettings().setBaumgarte(Settings.DEFAULT_BAUMGARTE / 20);
-        world.getSettings().setLinearTolerance(Settings.DEFAULT_LINEAR_TOLERANCE / 100);
+        world.getSettings().setBaumgarte(Settings.DEFAULT_BAUMGARTE);
+        world.getSettings().setLinearTolerance(Settings.DEFAULT_LINEAR_TOLERANCE);
+        CollisionItemBroadphaseDetector<Body, BodyFixture> bd = world.getBroadphaseDetector();
+        DynamicAABBTree<CollisionItem<Body, BodyFixture>> tree = new DynamicAABBTree<>(bd.getBroadphaseFilter(), bd.getAABBProducer(), new NullAABBExpansionMethod<>());
+        world.setBroadphaseDetector(new CollisionItemBroadphaseDetectorAdapter<>(tree));
     }
 
     public World<Body> world() {
@@ -93,8 +102,10 @@ public class PhysicsEngine {
             l = l.pull();
             int idx = max - Math.min(max, cur * space / 10) + 1;
             idx = Math.clamp(0, max, idx);
-            l.position().x(player.positions().getDouble(idx * 2));
-            l.position().y(player.positions().getDouble(idx * 2 + 1));
+            if (player.positions().size() > 0) {
+                l.position().x(player.positions().getDouble(idx * 2));
+                l.position().y(player.positions().getDouble(idx * 2 + 1));
+            }
             if (l.body != null) {
                 l.body.translateToOrigin();
                 l.body.translate(game.toWorldSpaceX(l.position().x()), l.position().y());
@@ -111,7 +122,7 @@ public class PhysicsEngine {
         while (spawn > 0) {
             float f = r.nextFloat();
             spawn = spawn - f;
-            if (f < 0.005) count++;
+            if (f < spawnChance) count++;
         }
         float px = (float) game.level().startPositions().get(0).position().x();
         float py = (float) game.level().startPositions().get(0).position().y();
