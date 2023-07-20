@@ -13,6 +13,5 @@ public class ClientDisconnectedHandler extends ServerHandler<PacketClientDisconn
 
     @Override
     public void receivePacket0(@NotNull Connection connection, @NotNull PacketClientDisconnected packet) {
-
     }
 }

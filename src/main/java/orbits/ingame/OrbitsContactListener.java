@@ -61,7 +61,7 @@ public class OrbitsContactListener extends ContactListenerAdapter<Body> {
                     game.reset(b);
                 } else if (b2.getUserData() instanceof Player) {
                     Player target = (Player) b2.getUserData();
-                    Player killer = (Player) game.entities.get(b.ownerId());
+                    Player killer = (Player) game.get(b.ownerId());
                     game.kill(target, killer);
                 }
             }
@@ -90,7 +90,7 @@ public class OrbitsContactListener extends ContactListenerAdapter<Body> {
         }
         if (ball.ownerId() != 0) {
             if (ball.ownerId() == player.entityId()) return;
-            game.kill(player, (Player) game.entities.get(ball.ownerId()));
+            game.kill(player, (Player) game.get(ball.ownerId()));
             return;
         }
         collision.getContactConstraint().setEnabled(false);

@@ -38,6 +38,10 @@ import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+import java.util.Collection;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class IngameGui extends ParentableAbstractGui {
     protected final OrbitsGame orbits;
     protected final Game game;
@@ -47,6 +51,7 @@ public class IngameGui extends ParentableAbstractGui {
     protected final Texture ballTexture;
     protected final @Nullable OrbitsServer server;
     protected final int idModifier;
+    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
     protected Connection connection;
     protected boolean paused = false;
 
@@ -59,55 +64,77 @@ public class IngameGui extends ParentableAbstractGui {
         game = orbits.currentLobby();
         connection.addHandler(PacketEntityData.class, (con, packet) -> {
             launcher().gameThread().submit(() -> {
-                Int2ObjectMap<Entity> entities = game.entities();
-                if (!entities.containsKey(packet.entity.entityId())) {
-                    entities.put(packet.entity.entityId(), packet.entity);
-                    if (packet.entity instanceof LocalPlayer) {
-                        LocalPlayer lp = (LocalPlayer) packet.entity;
-                        int kid = lp.keybindId() - idModifier;
-                        if (keybindToPlayer.containsKey(kid)) {
-                            LocalPlayer old = keybindToPlayer.get(kid);
-                            lp.display(old.display());
-                            keybindToPlayer.put(kid, lp);
+                try {
+                    lock.writeLock().lock();
+                    if (!game.contains(packet.entity.entityId())) {
+                        game.put(packet.entity);
+                        if (packet.entity instanceof LocalPlayer) {
+                            LocalPlayer lp = (LocalPlayer) packet.entity;
+                            int kid = lp.keybindId() - idModifier;
+                            if (keybindToPlayer.containsKey(kid)) {
+                                LocalPlayer old = keybindToPlayer.get(kid);
+                                lp.display(old.display());
+                                keybindToPlayer.put(kid, lp);
+                            }
+                        }
+                        Body body = game.setupBody(packet.entity);
+                        game.physicsEngine().world().addBody(body);
+                        game.setMotionToWorld(packet.entity);
+                    } else {
+                        Ball b = (Ball) game.get(packet.entity.entityId());
+                        b.position().set(packet.entity.position());
+                        game.setPositionToWorld(b);
+                        b.color().set(packet.entity.color());
+                        b.motion().set(packet.entity.motion());
+                        game.setMotionToWorld(b);
+                        if (b instanceof Player && packet.entity instanceof Player) {
+                            Player p = (Player) b;
+                            Player n = (Player) packet.entity;
+//                            p.dodgeMultiplier(game, n.dodgeMultiplier());
+//                            p.dodgeMultiplierApplied(n.dodgeMultiplierApplied());
+                            p.currentOrbit(game.level(), n.currentOrbitsId());
+                            p.orbiting(n.orbiting(), n.orbitingTheta());
+                            p.updateMotion(game);
+                            game.setMotionToWorld(b);
                         }
                     }
-                    Body body = game.setupBody(packet.entity);
-                    game.physicsEngine().world().addBody(body);
-                    game.setMotionToWorld(packet.entity);
-                } else {
-                    Ball b = (Ball) entities.get(packet.entity.entityId());
-                    b.position().set(packet.entity.position());
-                    b.color().set(packet.entity.color());
-                    b.motion().set(packet.entity.motion());
-                    game.setMotionToWorld(b);
-                    if (b instanceof Player && packet.entity instanceof Player) {
-                        Player p = (Player) b;
-                        Player n = (Player) packet.entity;
-                        p.dodgeMultiplier(game, n.dodgeMultiplier());
-                        p.dodgeMultiplierApplied(n.dodgeMultiplierApplied());
-                        p.currentOrbit(game.level(), n.currentOrbitsId());
-                        p.orbiting(n.orbiting(), n.orbitingTheta());
-                        p.updateMotion(game);
-                        game.setMotionToWorld(b);
-                    }
-                    game.setPositionToWorld(b);
+                } finally {
+                    lock.writeLock().unlock();
+                }
+            });
+        });
+        connection.addHandler(PacketDodge.class, (con, packet) -> {
+            launcher().gameThread().submit(() -> {
+                try {
+                    lock.writeLock().lock();
+                    Player p = (Player) game.get(packet.playerId);
+                    if (p == null) return;
+                    p.dodgeMultiplier(game, Player.DODGE_SPEED);
+                    p.dodgeMultiplierApplied(System.currentTimeMillis());
+                } finally {
+                    lock.writeLock().unlock();
                 }
             });
         });
         connection.addHandler(PacketRemoveTrail.class, (con, packet) -> {
             launcher().gameThread().submit(() -> {
-                Entity e = game.entities().get(packet.entityId);
-                Ball t = (Ball) game.entities().get(packet.trailId);
-                if (e instanceof Player) {
-                    Player p = (Player) e;
-                    t.prev().pull(t.pull());
-                    t.pull(null);
-                    t.ownerId(0);
-                    p.updateMotion(game);
-                    game.setupProjectile(p, t);
-                    System.out.println("shoot");
-                } else {
-                    System.out.println("Player no player????");
+                try {
+                    lock.writeLock().lock();
+
+                    Entity e = game.get(packet.entityId);
+                    Ball t = (Ball) game.get(packet.trailId);
+                    if (e instanceof Player) {
+                        Player p = (Player) e;
+                        t.prev().pull(t.pull());
+                        t.pull(null);
+                        t.ownerId(0);
+                        p.updateMotion(game);
+                        game.setupProjectile(p, t);
+                    } else {
+                        System.out.println("Player no player????");
+                    }
+                } finally {
+                    lock.writeLock().unlock();
                 }
             }).exceptionally(e -> {
                 e.printStackTrace();
@@ -116,30 +143,39 @@ public class IngameGui extends ParentableAbstractGui {
         });
         connection.addHandler(PacketAddTrail.class, (con, packet) -> {
             launcher().gameThread().submit(() -> {
-                Entity e = game.entities().get(packet.entityId);
-                Ball t = (Ball) game.entities().get(packet.trailId);
-                if (e instanceof Player) {
-                    if (t.prev() != null) {
-                        t.prev().pull(t.pull());
-                        t.pull(null);
+                try {
+                    lock.writeLock().lock();
+                    Entity e = game.get(packet.entityId);
+                    Ball t = (Ball) game.get(packet.trailId);
+                    if (e instanceof Player) {
+                        if (t.prev() != null) {
+                            t.prev().pull(t.pull());
+                            t.pull(null);
+                        }
+                        ((Player) e).addTrail(t);
+                    } else {
+                        System.out.println("Entity: " + e + " not a player");
                     }
-                    ((Player) e).addTrail(t);
-                } else {
-                    System.out.println("Entity: " + e + " not a player");
+                } finally {
+                    lock.writeLock().unlock();
                 }
             });
         });
         connection.addHandler(PacketEntityRemove.class, (con, packet) -> {
             launcher().gameThread().submit(() -> {
-                Int2ObjectMap<Entity> entities = game.entities();
-                Entity entity = entities.remove(packet.entityId);
-                entity.entityId(0);
-                game.physicsEngine().world().removeBody(entity.body);
-                launcher().frame().renderThread().submit(() -> {
-                    if (entity.model != null) {
-                        entity.model.cleanup();
-                    }
-                });
+                try {
+                    lock.writeLock().lock();
+                    Entity entity = game.remove(packet.entityId);
+                    entity.entityId(0);
+                    game.physicsEngine().world().removeBody(entity.body);
+                    launcher().frame().renderThread().submit(() -> {
+                        if (entity.model != null) {
+                            entity.model.cleanup();
+                        }
+                    });
+                } finally {
+                    lock.writeLock().unlock();
+                }
             });
         });
         connection.cleanupFuture().thenRun(() -> {
@@ -213,9 +249,14 @@ public class IngameGui extends ParentableAbstractGui {
     @Override
     protected void doUpdate() throws GameException {
         if (!paused) {
-            game.physicsEngine().tick();
-            redraw();
+            try {
+                lock.writeLock().lock();
+                game.physicsEngine().tick();
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
+        redraw();
     }
 
     @Override
@@ -246,7 +287,7 @@ public class IngameGui extends ParentableAbstractGui {
         @Override
         protected void doCleanup() throws GameException {
             launcher().contextProvider().freeContext(context, ContextProvider.ContextType.HUD);
-            for (Entity entity : game.entities().values()) {
+            for (Entity entity : game.entityValues()) {
                 if (entity.model != null) {
                     entity.model.cleanup();
                     entity.model = null;
@@ -258,54 +299,60 @@ public class IngameGui extends ParentableAbstractGui {
 
         @Override
         protected boolean doRender(float mouseX, float mouseY, float partialTick) throws GameException {
-            for (Entity entity : game.entities().values()) {
-                if (entity instanceof Ball) {
-                    Ball ball = (Ball) entity;
-                    if (entity.model == null) {
-                        Model model = (ball instanceof Player ? (ball.ballItem = new GameItem(ballModel, false) {
-                            @Override
-                            public void applyToTransformationMatrix(Matrix4f transformationMatrix) {
-                                if (ball.motion().x() == 0 && ball.motion().y() == 0) {
-                                    super.applyToTransformationMatrix(transformationMatrix);
-                                    return;
+            try {
+                lock.readLock().lock();
+                Collection<Entity> col = game.entityValues();
+                for (Entity entity : col) {
+                    if (entity instanceof Ball) {
+                        Ball ball = (Ball) entity;
+                        if (entity.model == null) {
+                            Model model = (ball instanceof Player ? (ball.ballItem = new GameItem(ballModel, false) {
+                                @Override
+                                public void applyToTransformationMatrix(Matrix4f transformationMatrix) {
+                                    if (ball.motion().x() == 0 && ball.motion().y() == 0) {
+                                        super.applyToTransformationMatrix(transformationMatrix);
+                                        return;
+                                    }
+                                    transformationMatrix.rotate(Math.toRadians(-rotation().x.floatValue()), new Vector3f((float) ball.motion().x(), (float) ball.motion().y(), 0).normalize());
+                                    transformationMatrix.translate(position().x.floatValue(), position().y.floatValue(), position().z.floatValue());
+                                    transformationMatrix.scale(scale().x.floatValue(), scale().y.floatValue(), scale().z.floatValue());
                                 }
-                                transformationMatrix.rotate(Math.toRadians(-rotation().x.floatValue()), new Vector3f((float) ball.motion().x(), (float) ball.motion().y(), 0).normalize());
-                                transformationMatrix.translate(position().x.floatValue(), position().y.floatValue(), position().z.floatValue());
-                                transformationMatrix.scale(scale().x.floatValue(), scale().y.floatValue(), scale().z.floatValue());
+                            }) : (ball.ballItem = new GameItem(ballModel, false))).createModel();
+                            if (ball instanceof LocalPlayer) {
+                                GlyphStaticModel m = launcher().glyphProvider().loadStaticModel(Component.text(Character.toString(((LocalPlayer) ball).display())), 50);
+                                GameItem gi = new GameItem(m);
+                                ((LocalPlayer) ball).textColor = gi;
+                                gi.scale(1 / 70F, 1 / 70F, 1);
+                                gi.position().x.bind(NumberValue.constant(-.5F).multiply(m.width()).divide(70));
+                                gi.position().y.bind(m.descent().subtract(1).divide(70));
+                                model = new GLESCombinedModelsModel(model, gi.createModel());
                             }
-                        }) : (ball.ballItem = new GameItem(ballModel, false))).createModel();
-                        if (ball instanceof LocalPlayer) {
-                            GlyphStaticModel m = launcher().glyphProvider().loadStaticModel(Component.text(Character.toString(((LocalPlayer) ball).display())), 50);
-                            GameItem gi = new GameItem(m);
-                            ((LocalPlayer) ball).textColor = gi;
-                            gi.scale(1 / 70F, 1 / 70F, 1);
-                            gi.position().x.bind(NumberValue.constant(-.5F).multiply(m.width()).divide(70));
-                            gi.position().y.bind(m.descent().subtract(1).divide(70));
-                            model = new GLESCombinedModelsModel(model, gi.createModel());
+                            entity.gameItem = new GameItem(model);
+                            entity.model = entity.gameItem.createModel();
                         }
-                        entity.gameItem = new GameItem(model);
-                        entity.model = entity.gameItem.createModel();
-                    }
-                    ball.ballItem.color().x.number(ball.color().x());
-                    ball.ballItem.color().y.number(ball.color().y());
-                    ball.ballItem.color().z.number(ball.color().z());
-                    if (entity instanceof LocalPlayer) {
-                        LocalPlayer p = (LocalPlayer) entity;
-                        p.textColor.color().set(1 - ball.ballItem.color().x.floatValue(), 1 - ball.ballItem.color().y.floatValue(), 1 - ball.ballItem.color().z.floatValue(), 1);
-                    }
-                    if (ball instanceof Player) {
-                        Player p = (Player) ball;
-                        long diff = p.dodgeMultiplierApplied() + Player.DODGE_DURATION - System.currentTimeMillis();
-                        if (diff > 0 && diff <= Player.DODGE_DURATION) {
-                            p.ballItem.rotation().x.number((float) diff / Player.DODGE_DURATION * 360);
-                        } else {
-                            p.ballItem.rotation().x.number(0);
+                        ball.ballItem.color().x.number(ball.color().x());
+                        ball.ballItem.color().y.number(ball.color().y());
+                        ball.ballItem.color().z.number(ball.color().z());
+                        if (entity instanceof LocalPlayer) {
+                            LocalPlayer p = (LocalPlayer) entity;
+                            p.textColor.color().set(1 - ball.ballItem.color().x.floatValue(), 1 - ball.ballItem.color().y.floatValue(), 1 - ball.ballItem.color().z.floatValue(), 1);
                         }
+                        if (ball instanceof Player) {
+                            Player p = (Player) ball;
+                            long diff = p.dodgeMultiplierApplied() + Player.DODGE_DURATION - System.currentTimeMillis();
+                            if (diff > 0 && diff <= Player.DODGE_DURATION) {
+                                p.ballItem.rotation().x.number((float) diff / Player.DODGE_DURATION * 360);
+                            } else {
+                                p.ballItem.rotation().x.number(0);
+                            }
+                        }
+                        entity.gameItem.position().x.number(ball.position().x() * width());
+                        entity.gameItem.position().y.number(ball.position().y() * height());
+                        context.drawModel(entity.model, x(), y(), 0, 0, 0, 0, height() * game.playerSize() * game.scale(), height() * game.playerSize() * game.scale(), 0);
                     }
-                    entity.gameItem.position().x.number(ball.position().x() * width());
-                    entity.gameItem.position().y.number(ball.position().y() * height());
-                    context.drawModel(entity.model, x(), y(), 0, 0, 0, 0, height() * game.playerSize() * game.scale(), height() * game.playerSize() * game.scale(), 0);
                 }
+            } finally {
+                lock.readLock().unlock();
             }
             return super.doRender(mouseX, mouseY, partialTick);
         }

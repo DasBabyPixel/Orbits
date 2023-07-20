@@ -11,4 +11,6 @@ public interface GameBroadcast {
     void removed(int entityId);
 
     void removeTrail(int entityOwner, int entityTrail);
+
+    void dodge(int playerId);
 }

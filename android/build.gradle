@@ -7,7 +7,7 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId 'de.dasbabypixel.orbits'
+        applicationId 'de.dasbabypixel.orbits2'
         minSdk 26
         targetSdk 33
         versionCode 1

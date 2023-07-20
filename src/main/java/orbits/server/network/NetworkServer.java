@@ -8,6 +8,7 @@ import gamelauncher.engine.network.packet.Packet;
 import gamelauncher.engine.network.packet.PacketEncoder;
 import gamelauncher.engine.network.packet.PacketHandler;
 import gamelauncher.engine.resource.AbstractGameResource;
+import gamelauncher.engine.resource.DummyGameResource;
 import gamelauncher.engine.resource.GameResource;
 import gamelauncher.engine.settings.SettingSection;
 import gamelauncher.engine.util.GameException;
@@ -72,12 +73,7 @@ public class NetworkServer extends OrbitsServer {
         }
         rawConnection.addHandler(PacketClientConnected.class, clientConnectedHandler = new ClientConnectedHandler(this));
         rawConnection.addHandler(PacketClientDisconnected.class, clientDisconnectedHandler = new ClientDisconnectedHandler(this));
-        GameResource resource = new AbstractGameResource() {
-            @Override
-            protected CompletableFuture<Void> cleanup0() throws GameException {
-                return null;
-            }
-
+        GameResource resource = new DummyGameResource() {
             @Override
             protected boolean autoTrack() {
                 return false;
@@ -175,12 +171,12 @@ public class NetworkServer extends OrbitsServer {
         }
 
         @Override
-        public <T extends Packet> void addHandler(Class<T> packetTpye, PacketHandler<T> handler) {
+        public <T extends Packet> void addHandler(Class<T> packetType, PacketHandler<T> handler) {
             handlerLock.lock();
-            if (!handlers.containsKey(packetTpye)) {
-                handlers.put(packetTpye, ConcurrentHashMap.newKeySet());
+            if (!handlers.containsKey(packetType)) {
+                handlers.put(packetType, ConcurrentHashMap.newKeySet());
             }
-            handlers.get(packetTpye).add(new HandlerEntry<>(packetTpye, handler));
+            handlers.get(packetType).add(new HandlerEntry<>(packetType, handler));
             handlerLock.unlock();
         }
 

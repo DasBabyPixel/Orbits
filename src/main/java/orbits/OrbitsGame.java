@@ -1,6 +1,5 @@
 package orbits;
 
-import de.dasbabypixel.api.property.Property;
 import gamelauncher.engine.event.EventHandler;
 import gamelauncher.engine.event.events.LauncherInitializedEvent;
 import gamelauncher.engine.event.events.gui.GuiOpenEvent;
@@ -8,7 +7,6 @@ import gamelauncher.engine.gui.GuiDistribution;
 import gamelauncher.engine.gui.guis.ButtonGui;
 import gamelauncher.engine.gui.guis.MainScreenGui;
 import gamelauncher.engine.render.Framebuffer;
-import gamelauncher.engine.settings.Setting;
 import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.concurrent.Threads;
 import orbits.data.LevelStorage;
@@ -18,7 +16,6 @@ import orbits.gui.ServerIpGui;
 import orbits.gui.TextureStorage;
 import orbits.ingame.Game;
 import orbits.network.PacketHandlers;
-import orbits.settings.OrbitsSettingSection;
 
 public class OrbitsGame extends gamelauncher.engine.game.Game {
     private final Orbits orbits;
@@ -39,15 +36,6 @@ public class OrbitsGame extends gamelauncher.engine.game.Game {
     @Override
     protected void launch0(Framebuffer framebuffer) throws GameException {
         packetHandlers().registerHandlers();
-        Setting<Boolean> fullscreen = launcher().settings().getSubSection(OrbitsSettingSection.ORBITS).getSetting(OrbitsSettingSection.FULLSCREEN);
-        launcher().frame().fullscreen().value(fullscreen.getValue());
-        launcher().frame().fullscreen().addListener(Property::value);
-        launcher().frame().fullscreen().addListener((p, o, n) -> {
-            launcher().gameThread().submit(() -> {
-                fullscreen.setValue(n);
-                launcher().saveSettings();
-            });
-        });
     }
 
     @Override

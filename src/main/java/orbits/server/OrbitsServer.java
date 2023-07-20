@@ -94,6 +94,11 @@ public abstract class OrbitsServer {
             public void removeTrail(int entityOwner, int entityTrail) {
                 connection.sendPacket(new PacketRemoveTrail(entityOwner, entityTrail));
             }
+
+            @Override
+            public void dodge(int playerId) {
+                connection.sendPacket(new PacketDodge(playerId));
+            }
         };
         thread.setName("OrbitsServerThread");
     }
@@ -112,6 +117,21 @@ public abstract class OrbitsServer {
             con.sendPacket(new PacketWelcome());
             con.sendPacket(new PacketLevelChecksum(game.availableData().level.uuid(), game.availableData().level.checksum()));
             clientConnections.add(con);
+            con.cleanupFuture().thenRun(() -> {
+                if (state == 0) {
+                    Set<Integer> ids = con.storedValue(KEY_IDS, HashSet::new);
+                    for (Integer id : ids) {
+                        playerColors.remove(con.<Integer>storedValue(KEY_ID) + id);
+
+                        con.sendPacket(new PacketPlayerDeleted(con.<Integer>storedValue(KEY_ID) + id));
+                        for (Connection clientConnection : clientConnections()) {
+                            if (clientConnection == con) continue;
+                            clientConnection.sendPacket(new PacketPlayerDeleted(con.<Integer>storedValue(KEY_ID) + id));
+                        }
+                    }
+                }
+                clientConnections.remove(con);
+            });
         });
         connection.addHandler(PacketRequestLevel.class, (con, packet) -> {
             try {
@@ -124,18 +144,18 @@ public abstract class OrbitsServer {
         });
         connection.addHandler(PacketNewPlayer.class, (con, packet) -> {
             thread.submit(() -> {
-                int baseId = con.storedValue(KEY_ID, () -> {
-                    int id = nextBaseId;
-                    nextBaseId = nextBaseId + BASE_ID_INTERVAL;
-                    return id;
-                });
+                if (con.storedValue(KEY_ID) == null) {
+                    con.storeValue(KEY_ID, nextBaseId);
+                    nextBaseId += BASE_ID_INTERVAL;
+                }
+                int baseId = con.storedValue(KEY_ID);
                 con.sendPacket(new PacketIdModifier(baseId));
                 Set<Integer> ids = con.storedValue(KEY_IDS, HashSet::new);
                 if (ids.contains(packet.id)) return;
                 ids.add(packet.id);
                 Vector3 color = newColor();
                 int id = baseId + packet.id;
-                playerColors.put(baseId + packet.id, color);
+                playerColors.put(id, color);
 
                 con.sendPacket(new PacketPlayerCreated(id, packet.ch, color));
                 for (Connection clientConnection : clientConnections()) {
@@ -167,8 +187,24 @@ public abstract class OrbitsServer {
                 for (Connection ccon : clientConnections)
                     if (!ccon.storedValue(KEY_READY, () -> false)) return;
                 joinedLatch = new CountDownLatch(clientConnections.size());
-                for (Connection ccon : clientConnections)
+                for (Connection ccon : clientConnections) {
                     ccon.sendPacket(new PacketIngame());
+                    ccon.cleanupFuture().thenRun(() -> {
+                        Set<Integer> ids = ccon.storedValue(KEY_IDS);
+                        if (ids == null) return;
+                        ids = new HashSet<>(ids);
+                        Set<Integer> finalIds = ids;
+                        thread.submit(() -> {
+                            for (int id : finalIds) {
+                                int entityId = ccon.<Integer>storedValue(KEY_ID) + id;
+                                Player p = players.get(entityId);
+                                if (p == null) continue;
+                                if (p.entityId() == 0) continue;
+                                game.kill(p, null);
+                            }
+                        });
+                    });
+                }
                 for (int id : playerColors.keySet()) {
                     Player p = new LocalPlayer(id, (char) 0);
                     p.color().set(playerColors.get(id));

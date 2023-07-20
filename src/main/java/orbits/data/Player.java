@@ -2,7 +2,6 @@ package orbits.data;
 
 import gamelauncher.engine.data.DataBuffer;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleList;
 import orbits.data.level.Level;
 import orbits.ingame.Game;
 
@@ -10,7 +9,7 @@ public class Player extends Ball {
 
     public static final float DODGE_SPEED = 2;
     public static final long DODGE_DURATION = 800;
-    private final DoubleList positions = new DoubleArrayList();
+    private final DoubleArrayList positions = new DoubleArrayList();
     private Orbit currentOrbit;
     private int currentOrbitsId = -1;
     private boolean orbiting = false;
@@ -18,7 +17,7 @@ public class Player extends Ball {
     private float dodgeMultiplier = 1;
     private long dodgeMultiplierApplied = Long.MAX_VALUE;
 
-    public DoubleList positions() {
+    public DoubleArrayList positions() {
         return positions;
     }
 

@@ -1,8 +1,6 @@
 package orbits.ingame;
 
 import gamelauncher.engine.GameLauncher;
-import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import orbits.OrbitsGame;
 import orbits.data.*;
 import orbits.data.level.Level;
@@ -19,16 +17,15 @@ import org.dyn4j.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Math;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Game {
     final PhysicsEngine physicsEngine = new PhysicsEngine(this);
     final AvailableData availableData = new AvailableData();
     final List<Player> players = new ArrayList<>();
-    final Int2ObjectMap<Entity> entities = new Int2ObjectLinkedOpenHashMap<>();
+    private final List<Entity> entities = new ArrayList<>();
+    //    private final Map<Integer, Entity> entities = new HashMap<>();
+    private final Collection<Entity> entityValues = entities;
     public GameBroadcast broadcast;
     float scale = 1;
     float speed = 0.25F;
@@ -75,7 +72,7 @@ public class Game {
     }
 
     void loadEntities() {
-        for (Entity entity : entities.values()) {
+        for (Entity entity : entityValues()) {
             if (entity instanceof Ball) {
                 Ball ball = (Ball) entity;
                 Body body = new Body();
@@ -117,11 +114,11 @@ public class Game {
                 Player player = entry.getValue().get(idx);
                 double worldX = Math.cos(2 * Math.PI * idx / maxIdx + r);
                 double worldY = Math.sin(2 * Math.PI * idx / maxIdx + r);
-                double x = toLocalSpaceX(worldX);
+                double x = worldX;
                 double y = worldY;
-                player.position().x(entry.getKey().position().x() + x * entry.getKey().radius());
+                player.position().x(entry.getKey().position().x() + toLocalSpaceX(x * entry.getKey().radius()));
                 player.position().y(entry.getKey().position().y() + y * entry.getKey().radius());
-                player.motion().x(y * speed);
+                player.motion().x(toLocalSpaceX(y * speed));
                 player.motion().y(-x * speed);
             }
         }
@@ -212,7 +209,7 @@ public class Game {
         p.dodgeMultiplierApplied(System.currentTimeMillis());
         Ball b = p.removeTrail();
         if (broadcast != null) {
-            broadcast.update(p);
+            broadcast.dodge(p.entityId());
         }
         if (b != null) {
             setupProjectile(p, b);
@@ -257,7 +254,7 @@ public class Game {
         if (player.entityId() == 0) return;
         players.remove(player);
         int pid = player.entityId();
-        entities.remove(player.entityId());
+        remove(player.entityId());
         player.entityId(0);
         physicsEngine.remove().add(player);
         if (broadcast != null) broadcast.removed(pid);
@@ -270,7 +267,7 @@ public class Game {
             Ball n = b.pull();
             if (killer == null || killer.entityId() == 0) {
                 if (broadcast != null) broadcast.removed(b.entityId());
-                entities.remove(b.entityId());
+                remove(b.entityId());
                 physicsEngine.remove().add(b);
                 if (b.prev() != null) b.prev().pull(b.pull());
                 b.pull(null);
@@ -353,12 +350,51 @@ public class Game {
 
     void newEntity(Entity entity) {
         if (!owner) throw new IllegalStateException("Not Owner");
-        entities.put(entityIdCounter, entity);
         entity.entityId(entityIdCounter++);
+        put(entity);
     }
 
-    public Int2ObjectMap<Entity> entities() {
-        return entities;
+//    public Map<Integer, Entity> entities() {
+//        if (!Thread.currentThread().getName().equals("GameThread") && !Thread.currentThread().getName().equals("OrbitsServerThread"))
+//            Thread.dumpStack();
+//        return entities;
+//    }
+
+    public boolean contains(int entityId) {
+        return index(entityId) != -1;
+    }
+
+    public int size() {
+        return entities.size();
+    }
+
+    public void put(Entity entity) {
+        int idx = index(entity.entityId());
+        if (idx == -1) entities.add(entity);
+        else entities.set(idx, entity);
+    }
+
+    public Entity get(int entityId) {
+        int idx = index(entityId);
+        if (idx == -1) return null;
+        return entities.get(idx);
+    }
+
+    public Entity remove(int entityId) {
+        int idx = index(entityId);
+        if (idx != -1) return entities.remove(idx);
+        return null;
+    }
+
+    public int index(int entityId) {
+        for (int i = 0; i < entities.size(); i++) {
+            if (entities.get(i).entityId() == entityId) return i;
+        }
+        return -1;
+    }
+
+    public Collection<Entity> entityValues() {
+        return entityValues;
     }
 
     public List<Player> players() {

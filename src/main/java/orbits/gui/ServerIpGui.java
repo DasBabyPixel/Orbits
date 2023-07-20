@@ -10,7 +10,6 @@ import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.keybind.MouseButtonKeybindEvent;
-import gamelauncher.engine.util.logging.Logger;
 import gamelauncher.engine.util.text.Component;
 import orbits.OrbitsGame;
 import orbits.server.network.NetworkServerUtil;
@@ -21,7 +20,6 @@ import java.util.Locale;
 
 public interface ServerIpGui extends Gui {
     class Simple extends ParentableAbstractGui implements ServerIpGui {
-        private static final Logger logger = Logger.logger();
         private final OrbitsGame orbits;
         private String ip = "?????";
         private TextGui textGui;

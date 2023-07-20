@@ -32,6 +32,7 @@ public class PacketHandlers {
         client.packetRegistry().register(PacketAddTrail.class, PacketAddTrail::new);
         client.packetRegistry().register(PacketRemoveTrail.class, PacketRemoveTrail::new);
         client.packetRegistry().register(PacketJoined.class, PacketJoined::new);
+        client.packetRegistry().register(PacketDodge.class, PacketDodge::new);
 
         client.packetRegistry().register(PacketPlayerCreated.class, PacketPlayerCreated::new);
         client.packetRegistry().register(PacketPlayerDeleted.class, PacketPlayerDeleted::new);

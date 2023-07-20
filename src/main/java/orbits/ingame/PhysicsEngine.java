@@ -45,7 +45,7 @@ public class PhysicsEngine {
 
     public void tick() {
         if (game.owner()) { // Nur wenn wir der server sind
-            if (game.entities().size() < 500) { // Nur neue bälle erschaffen, wenn weniger als 500 existieren
+            if (game.size() < 500) { // Nur neue bälle erschaffen, wenn weniger als 500 existieren
                 spawnBalls();
             }
         }
@@ -156,7 +156,7 @@ public class PhysicsEngine {
     }
 
     private void tickEntities() {
-        for (Entity entity : game.entities().values()) {
+        for (Entity entity : game.entityValues()) {
             tickEntity(entity);
         }
     }
@@ -171,14 +171,14 @@ public class PhysicsEngine {
     }
 
     private void tickBall(Ball ball) {
+        ball.updateMotion(game);
+        ball.position().x(game.toLocalSpaceX(ball.body.getWorldCenter().x));
+        ball.position().y(ball.body.getWorldCenter().y);
         if (ball instanceof Player) {
             Player p = (Player) ball;
             p.positions().add(ball.position().x());
             p.positions().add(ball.position().y());
         }
-        ball.updateMotion(game);
-        ball.position().x(game.toLocalSpaceX(ball.body.getWorldCenter().x));
-        ball.position().y(ball.body.getWorldCenter().y);
     }
 
     private void removeOldEntities() {

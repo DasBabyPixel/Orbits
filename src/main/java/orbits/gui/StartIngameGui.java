@@ -11,8 +11,6 @@ import gamelauncher.engine.util.GameException;
 import gamelauncher.engine.util.keybind.KeybindEvent;
 import gamelauncher.engine.util.keybind.KeyboardKeybindEvent;
 import gamelauncher.engine.util.text.Component;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java8.util.concurrent.CompletableFuture;
@@ -40,7 +38,6 @@ public interface StartIngameGui extends Gui {
         protected final Random r = new Random(0);
         protected final IntList players = new IntArrayList();
         protected final List<PlayerGui> playerGuis = new ArrayList<>();
-        protected final Int2ObjectMap<Vector3> remotePlayers = new Int2ObjectOpenHashMap<>();
         protected final Game game;
         protected final ButtonGui back;
         protected final CompletableFuture<Void> handshakeFuture = new CompletableFuture<>();
@@ -162,9 +159,7 @@ public interface StartIngameGui extends Gui {
         }
 
         private void checkComplete(Connection connection) {
-            System.out.println("check");
             if (game.availableData().complete()) {
-                System.out.println("complete");
                 connection.sendPacket(new PacketReadyToPlay());
                 handshakeFuture.complete(null);
             }
@@ -223,11 +218,10 @@ public interface StartIngameGui extends Gui {
         }
 
         protected PlayerGui addPlayer(int id, char display, Vector3 color) throws GameException {
-            id = id - idModifier;
             if (display == 0) {
-                remotePlayers.put(id, color);
                 return null;
             }
+            id = id - idModifier;
             players.add(id);
             PlayerGui pg = new PlayerGui(orbits, Character.toString(display), color);
             pg.xProperty().bind(xProperty().add(10));

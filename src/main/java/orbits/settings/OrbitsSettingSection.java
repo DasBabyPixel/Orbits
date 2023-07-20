@@ -8,7 +8,6 @@ import gamelauncher.engine.settings.SimpleSetting;
 public class OrbitsSettingSection extends AbstractSettingSection {
     public static final SettingPath ORBITS = new SettingPath("orbits");
     public static final SettingPath SERVER_URL = new SettingPath("server_url");
-    public static final SettingPath FULLSCREEN = new SettingPath("fullscreen");
 
     public OrbitsSettingSection(EventManager eventManager) {
         super(eventManager);
@@ -17,6 +16,5 @@ public class OrbitsSettingSection extends AbstractSettingSection {
     @Override
     protected void addSettings(EventManager eventManager) {
         addSetting(SERVER_URL, new SimpleSetting<>(String.class, "https://ssh.darkcube.eu/orbits/"));
-        addSetting(FULLSCREEN, new SimpleSetting<>(Boolean.class, true));
     }
 }
